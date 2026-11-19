@@ -428,8 +428,18 @@ body { padding-bottom: 46px; }
     let mx = 0, my = 0, cx = 0, cy = 0, t0 = performance.now(), raf;
     const mover = e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; };
     addEventListener("pointermove", mover); naSaida(() => removeEventListener("pointermove", mover));
+    // no celular: os produtos seguem a inclinação do aparelho (giroscópio); sem sensor, flutuam sozinhos
+    let giro = null;
+    if (!fino) {
+      const orient = e => { if (e.gamma == null || e.beta == null) return; giro = { x: Math.max(-1, Math.min(1, e.gamma / 25)), y: Math.max(-1, Math.min(1, (e.beta - 45) / 25)) }; };
+      addEventListener("deviceorientation", orient); naSaida(() => removeEventListener("deviceorientation", orient));
+      // iPhone pede permissão: o primeiro toque na tela de entrada faz o pedido
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        document.getElementById("palco").addEventListener("touchend", () => DeviceOrientationEvent.requestPermission().catch(() => {}), { once: true });
+      }
+    }
     function quadro(t) {
-      if (!fino) { mx = Math.sin((t - t0) / 2400) * .6; my = Math.cos((t - t0) / 3100) * .4; }
+      if (!fino) { if (giro) { mx = giro.x; my = giro.y; } else { mx = Math.sin((t - t0) / 2400) * .6; my = Math.cos((t - t0) / 3100) * .4; } }
       cx += (mx - cx) * .06; cy += (my - cy) * .06;
       itens.forEach((el, i) => { const s = estado[i], k = 18 + s.d * 46; el.style.translate = `${-cx * k + s.dx}px ${-cy * k * .7 + s.dy}px`; });
       raf = requestAnimationFrame(quadro);
