@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Comparador Feed</title>
+<link rel="icon" type="image/svg+xml" href="../assets/marca/favicon.svg">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout C · Feed visual — mural de fotos em alturas alternadas (estilo Pinterest),
+   selo do menor preço por cima; tocar abre uma folha com barras empilhadas por loja
+   (produto + frete + imposto + ICMS) para VER a vitrine enganando.
+   Visual escuro de propósito, sem tema claro. */
+:root {
+  color-scheme: dark;
+  --bg: #0b0a10;
+  --card: #15131c;
+  --card-2: #1d1a27;
+  --line: rgba(255,255,255,.08);
+  --fg: #f5f2fa;
+  --muted: #9a95a8;
+  --accent: #c6ff4d;          /* selo de preço (lima) */
+  --c-prod: #e9e5f2;          /* barra: produto */
+  --c-frete: #5aa9ff;         /* barra: frete */
+  --c-ii: #ff5fa8;            /* barra: imposto de importação */
+  --c-icms: #a77bff;          /* barra: ICMS */
+  --bom: #6ef0a8; --caro: #ffb057;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); overflow-x: clip; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header { padding-block: 28px 8px; display: grid; gap: 18px; }
+.linha-topo { display: flex; align-items: center; gap: 14px; }
+.logo { font: 800 22px/1 var(--display); letter-spacing: -.02em; }
+.logo span { color: var(--accent); }
+.bt-alertas { margin-left: auto; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 8px 14px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.bt-alertas b { background: var(--accent); color: #12160a; border-radius: 99px; padding: 0 7px; font-size: 12px; }
+h1 { font: 800 clamp(34px, 6vw, 68px)/.98 var(--display); letter-spacing: -.035em; margin: 0; max-width: 15ch; text-wrap: balance; }
+h1 em { font-style: normal; background: linear-gradient(90deg, var(--c-prod) 0 34%, var(--c-frete) 34% 50%, var(--c-ii) 50% 78%, var(--c-icms) 78%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.sub { color: var(--muted); margin: 0; max-width: 58ch; font-size: 16px; }
+.sub b { color: var(--caro); font-weight: 600; }
+.controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.busca { flex: 1 1 260px; max-width: 380px; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 10px 16px; outline: none; }
+.busca:focus { border-color: var(--accent); }
+.chip { background: none; border: 1px solid var(--line); border-radius: 99px; padding: 7px 14px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.chip:hover { color: var(--fg); }
+.chip.ativo { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+/* mural */
+.mural { columns: 4 250px; column-gap: 14px; padding-block: 18px 56px; }
+.post { break-inside: avoid; margin: 0 0 14px; display: block; width: 100%; background: var(--card); border: 0; border-radius: 22px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; position: relative; transition: transform .2s; }
+.post:hover { transform: translateY(-3px); }
+.post:hover img { transform: scale(1.04); }
+.post .img { position: relative; overflow: hidden; }
+.post img { display: block; width: 100%; object-fit: cover; transition: transform .5s; }
+.post .img::after { content: ""; position: absolute; inset: 55% 0 0; background: linear-gradient(transparent, rgba(11,10,16,.85)); }
+.preco-selo { position: absolute; left: 12px; top: 12px; z-index: 1; background: var(--accent); color: #12160a; border-radius: 14px; padding: 7px 11px 6px; display: grid; line-height: 1.05; box-shadow: 0 8px 20px rgba(0,0,0,.35); }
+.preco-selo small { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .75; }
+.preco-selo strong { font: 800 19px var(--display); letter-spacing: -.02em; }
+.tag-selo { position: absolute; right: 12px; top: 12px; z-index: 1; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 99px; background: rgba(11,10,16,.7); backdrop-filter: blur(6px); }
+.tag-selo.baixa { color: var(--bom); } .tag-selo.alta { color: var(--caro); } .tag-selo.normal { display: none; }
+.post .txt { position: relative; padding: 12px 14px 14px; display: grid; gap: 8px; }
+.post .marca { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.post h3 { margin: 0; font: 700 18px/1.15 var(--display); letter-spacing: -.01em; }
+.mini { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--card-2); }
+.mini i { display: block; height: 100%; }
+.post .rod { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
+.post .rod b { color: var(--fg); font-weight: 600; }
+
+/* folha de comparação */
+.veu { position: fixed; inset: 0; background: rgba(5,4,8,.72); backdrop-filter: blur(6px); z-index: 20; }
+.folha { position: fixed; z-index: 21; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1040px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: 28px; box-shadow: 0 40px 120px rgba(0,0,0,.7); animation: abre .28s cubic-bezier(.2,.8,.3,1); }
+@keyframes abre { from { transform: translate(-50%, -48%) scale(.985); } }
+.folha-in { display: grid; grid-template-columns: 320px minmax(0, 1fr); }
+.folha-foto { position: relative; align-self: start; padding: 14px 0 14px 14px; display: grid; gap: 8px; }
+.folha-foto img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border-radius: 20px; }
+.folha-foto figcaption { font-size: 10.5px; color: var(--muted); padding-inline: 4px; }
+.folha-corpo { padding: 26px 28px 28px; display: grid; gap: 18px; min-width: 0; align-content: start; }
+.fechar { position: absolute; right: 14px; top: 14px; z-index: 2; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--card-2); cursor: pointer; font-size: 16px; }
+.folha h2 { margin: 0; font: 800 clamp(26px, 3.4vw, 38px)/1 var(--display); letter-spacing: -.03em; padding-right: 40px; }
+.resumo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.resumo strong { font: 800 36px/1 var(--display); letter-spacing: -.03em; color: var(--accent); }
+.resumo span { color: var(--muted); }
+.selo { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 99px; background: var(--card-2); }
+.selo.baixa { color: var(--bom); } .selo.alta { color: var(--caro); } .selo.normal { color: var(--muted); }
+.legenda { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.barras { display: grid; gap: 12px; }
+.barra { display: grid; grid-template-columns: 118px minmax(0, 1fr) 104px; gap: 12px; align-items: center; }
+.barra .loja { font-weight: 600; font-size: 14px; line-height: 1.2; }
+.barra .loja small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.trilho { position: relative; height: 30px; }
+.empilha { display: flex; height: 100%; border-radius: 9px; overflow: hidden; }
+.empilha i { height: 100%; display: block; position: relative; }
+.empilha i + i { box-shadow: inset 2px 0 0 var(--card); }
+.vitrine-marca { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--fg); border-radius: 2px; }
+.barra .total { font: 700 17px var(--display); text-align: right; white-space: nowrap; }
+.barra.primeira .total { color: var(--accent); }
+.barra .conta { grid-column: 2 / -1; font-size: 12px; color: var(--muted); margin-top: -6px; }
+.barra .conta .imp { color: var(--c-ii); }
+.engana { background: rgba(255,95,168,.08); border: 1px solid rgba(255,95,168,.3); border-radius: 16px; padding: 12px 14px; font-size: 14px; color: #f3d0e2; }
+.engana b { color: var(--fg); }
+.acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+.bt { border-radius: 99px; padding: 12px 20px; font-weight: 700; cursor: pointer; text-decoration: none; border: 1px solid var(--line); background: var(--card-2); display: inline-flex; gap: 8px; align-items: center; }
+.bt:hover { border-color: var(--accent); }
+.bt-lima { background: var(--accent); color: #12160a; border-color: var(--accent); }
+.bt-p { padding: 7px 13px; font-size: 13px; }
+.form-alerta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 10px 10px 10px 14px; }
+.form-alerta label { color: var(--muted); font-size: 14px; }
+.form-alerta input { width: 120px; background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-weight: 700; outline: none; }
+.nota { font-size: 12px; color: var(--muted); }
+
+.gaveta { position: fixed; z-index: 22; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(16px + env(safe-area-inset-top, 0px)); width: min(400px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 18px; display: grid; gap: 12px; box-shadow: 0 30px 90px rgba(0,0,0,.7); }
+.gaveta header { padding: 0; display: flex; justify-content: space-between; align-items: center; }
+.gaveta h2 { margin: 0; font: 800 22px var(--display); }
+.al { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+.al img { width: 64px; height: 64px; object-fit: cover; border-radius: 14px; }
+.al .n { font-size: 13px; color: var(--muted); }
+.al .n b { color: var(--fg); }
+.al .bts { grid-column: 1 / -1; display: flex; gap: 8px; }
+.toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: grid; gap: 8px; width: min(420px, calc(100vw - 32px)); }
+.toasts div { background: var(--accent); color: #12160a; border-radius: 18px; padding: 12px 16px; font-weight: 700; animation: abreT .3s; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.toasts small { display: block; font-weight: 500; }
+@keyframes abreT { from { transform: translateY(12px); opacity: 0; } }
+.rodape { color: var(--muted); font-size: 12px; padding-block: 0 40px; }
+
+@media (max-width: 760px) {
+  .folha { left: 0; right: 0; top: auto; bottom: 0; transform: none; width: 100%; max-height: 92vh; border-radius: 26px 26px 0 0; animation: sobe .3s cubic-bezier(.2,.8,.3,1); }
+  @keyframes sobe { from { transform: translateY(40px); } }
+  .folha-in { grid-template-columns: 1fr; }
+  .folha-foto { padding: 0; }
+  .folha-foto img { border-radius: 26px 26px 0 0; aspect-ratio: auto; height: 220px; }
+  .folha-foto figcaption { position: absolute; left: 12px; right: 56px; top: 190px; color: rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  .folha-corpo { padding: 20px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .barra { grid-template-columns: minmax(0, 1fr) auto; }
+  .barra .trilho { grid-column: 1 / -1; grid-row: 2; }
+  .barra .conta { grid-column: 1 / -1; margin-top: 0; }
+  .mural { columns: 2 150px; column-gap: 10px; }
+  .post { border-radius: 16px; margin-bottom: 10px; }
+  .post h3 { font-size: 15px; }
+  .preco-selo strong { font-size: 16px; }
+  .post .rod span:last-child { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<header class="wrap">
+  <div class="linha-topo">
+    <div class="logo" id="nome-site">Comparador<span>.</span></div>
+    <button class="bt-alertas" id="abrir-alertas">Meus alertas <b id="qtd">0</b></button>
+  </div>
+  <h1>O preço da vitrine é só a primeira <em>parte da barra</em>.</h1>
+  <p class="sub">Toque num produto para ver, loja por loja, quanto é produto, frete e imposto. <b>Preços de demonstração:</b> produtos reais, valores inventados.</p>
+  <div class="controles">
+    <input class="busca" id="campo" type="search" placeholder="Buscar: AirPods, Kindle, JBL..." autocomplete="off" aria-label="Buscar produto">
+    <div id="chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+</header>
+<main class="wrap mural" id="mural"></main>
+<footer class="wrap rodape" id="rodape"></footer>
+<div class="veu" id="veu" hidden></div>
+<section class="folha" id="folha" hidden role="dialog" aria-modal="true"></section>
+<aside class="gaveta" id="gaveta" hidden></aside>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>window.RAIZ = "../";</script>
+<script src="../config.js"></script>
+<script src="../dados/ofertas-exemplo.js"></script>
+<script src="../nucleo.js"></script>
+<script>
+(function () {
+  const { D, brl, brlCurto, esc, loja, produto, resumo, linkLoja, conta, regra, credito, buscar, alertas, lerValor, categorias, nomeCompleto } = N;
+  document.getElementById("nome-site").innerHTML = esc(N.C.nomeDoSite) + "<span>.</span>";
+  let filtro = "", cat = "", formAberto = false;
+  // alturas alternadas para o efeito de mural
+  const alturas = [300, 220, 260, 340, 240, 280, 200, 320];
+
+  function segmentos(o) {
+    return [
+      { v: o.preco, c: "var(--c-prod)", n: "produto" },
+      { v: o.frete, c: "var(--c-frete)", n: "frete" },
+      { v: o.ii, c: "var(--c-ii)", n: "imposto" },
+      { v: o.icms, c: "var(--c-icms)", n: "ICMS" }
+    ].filter(s => s.v > 0);
+  }
+
+  function mural() {
+    document.getElementById("chips").innerHTML = ["", ...categorias].map(c => `<button class="chip ${c === cat ? "ativo" : ""}" data-cat="${esc(c)}">${c ? esc(c) : "Tudo"}</button>`).join("");
+    const lista = buscar(filtro, cat);
+    document.getElementById("mural").innerHTML = lista.length ? lista.map((p, i) => {
+      const r = resumo(p), m = r.melhor, maior = r.maisCara.total;
+      return `<button class="post" data-id="${p.id}" aria-label="${esc(nomeCompleto(p))}, menor preço final ${brl(m.total)}">
+        <div class="img"><img src="${p.foto}" alt="" style="height:${alturas[i % alturas.length]}px" loading="lazy">
+          <span class="preco-selo"><small>menor final</small><strong class="num">${brlCurto(m.total)}</strong></span>
+          <span class="tag-selo ${r.selo.tipo}">${r.selo.curto}</span></div>
+        <div class="txt">
+          <span class="marca">${esc(p.marca)}</span>
+          <h3>${esc(p.nome)}</h3>
+          <span class="mini">${segmentos(m).map(s => `<i style="width:${s.v / maior * 100}%;background:${s.c}"></i>`).join("")}</span>
+          <span class="rod"><span>na <b>${esc(loja(m.loja).nome)}</b></span><span>${r.lista.length} lojas</span></span>
+        </div>
+      </button>`;
+    }).join("") : `<p style="color:var(--muted)">Nenhum produto com esse nome na demonstração.</p>`;
+    document.getElementById("rodape").textContent = regra() + " Fotos do Wikimedia Commons com licença livre (créditos em cada produto). Protótipo de estudo.";
+    document.getElementById("qtd").textContent = alertas.lista().length;
+  }
+
+  function folha(id) {
+    const p = produto(id), $f = document.getElementById("folha"), $v = document.getElementById("veu");
+    if (!p) { $f.hidden = true; $v.hidden = true; return; }
+    const r = resumo(p), m = r.melhor, alerta = alertas.de(p.id);
+    const escala = r.lista.reduce((a, o) => Math.max(a, o.total), 0);
+    $f.innerHTML = `<button class="fechar" id="fechar" aria-label="Fechar">✕</button>
+      <div class="folha-in">
+        <figure class="folha-foto" style="margin:0"><img src="${p.foto}" alt="${esc(nomeCompleto(p))}"><figcaption>${esc(credito(p))}</figcaption></figure>
+        <div class="folha-corpo">
+          <div><div class="nota" style="font-weight:600;letter-spacing:.05em;text-transform:uppercase">${esc(p.marca)} · ${esc(p.categoria)}</div><h2>${esc(p.nome)}</h2></div>
+          <div class="resumo"><strong class="num">${brl(m.total)}</strong><span>na ${esc(loja(m.loja).nome)}, chega em ${m.prazoDias} dias</span><span class="selo ${r.selo.tipo}">${r.selo.texto}</span></div>
+          <div class="legenda"><span><i style="background:var(--c-prod)"></i>produto</span><span><i style="background:var(--c-frete)"></i>frete</span><span><i style="background:var(--c-ii)"></i>imposto de importação</span><span><i style="background:var(--c-icms)"></i>ICMS</span><span><i style="background:var(--fg);width:2px"></i>preço da vitrine</span></div>
+          <div class="barras">${r.lista.map((o, i) => `<div class="barra ${i === 0 ? "primeira" : ""}">
+            <span class="loja">${esc(loja(o.loja).nome)}<small>${o.internacional ? "importado · " : ""}${o.prazoDias} dias</small></span>
+            <span class="trilho"><span class="empilha" style="width:${o.total / escala * 100}%">${segmentos(o).map(s => `<i style="width:${s.v / o.total * 100}%;background:${s.c}" title="${s.n}: ${brl(s.v)}"></i>`).join("")}</span><span class="vitrine-marca" style="left:${o.preco / escala * 100}%"></span></span>
+            <span class="total num">${brl(o.total)}</span>
+            <span class="conta">${esc(conta(o)).replace(/(\+ imposto [^+]+\+ ICMS [^=]+)/, '<span class="imp">$1</span>')}</span>
+          </div>`).join("")}</div>
+          ${r.vitrineEngana ? `<div class="engana">Repare na barra da <b>${esc(loja(r.porVitrine.loja).nome)}</b>: a vitrine diz <b>${brl(r.porVitrine.preco)}</b>, a mais baixa de todas, mas o rosa e o roxo somam <b>${brl(r.porVitrine.impostos)}</b> de imposto e ela termina em <b>${r.posVitrine}º lugar</b>.</div>` : ""}
+          <div class="acoes">
+            <a class="bt bt-lima" href="${linkLoja(m, p)}" target="_blank" rel="noopener">Ir para a ${esc(loja(m.loja).nome)} ↗</a>
+            <button class="bt" id="bt-alerta">${alerta ? "Alerta em " + brl(alerta.alvo) : "Me avise quando baixar"}</button>
+          </div>
+          <form class="form-alerta" id="form-alerta" ${formAberto ? "" : "hidden"}>
+            <label for="alvo">Avise quando chegar a</label>
+            <input id="alvo" inputmode="decimal" value="${(alerta ? alerta.alvo : Math.floor(m.total * 0.9)).toFixed(2).replace(".", ",")}">
+            <button class="bt bt-lima bt-p" type="submit">${alerta ? "Atualizar" : "Criar alerta"}</button>
+            ${alerta ? '<button class="bt bt-p" type="button" id="bt-remover">Remover</button>' : ""}
+          </form>
+          <p class="nota" style="margin:0">${esc(regra())}</p>
+        </div>
+      </div>`;
+    $f.hidden = false; $v.hidden = false;
+  }
+
+  // ---------- alertas ----------
+  const $g = document.getElementById("gaveta");
+  function toast(t, s) { const el = document.createElement("div"); el.innerHTML = `${t}${s ? `<small>${s}</small>` : ""}`; document.getElementById("toasts").appendChild(el); setTimeout(() => el.remove(), 6000); }
+  function gaveta() {
+    const l = alertas.lista();
+    $g.innerHTML = `<header><h2>Meus alertas</h2><button class="fechar" style="position:static" id="fechar-g" aria-label="Fechar">✕</button></header>
+      <p class="nota" style="margin:0">Guardados neste navegador. “Simular queda” mostra como chega o aviso.</p>
+      ${l.length ? l.map(a => { const p = produto(a.produtoId); if (!p) return ""; const m = resumo(p).melhor, ok = m.total <= a.alvo;
+        return `<div class="al"><img src="${p.foto}" alt=""><div><b>${esc(nomeCompleto(p))}</b><div class="n">agora <b>${brl(m.total)}</b> · alvo <b>${brl(a.alvo)}</b></div><span class="selo ${ok ? "baixa" : "normal"}">${ok ? "Baixou!" : "Esperando"}</span></div>
+          <div class="bts"><button class="bt bt-p" data-ver="${p.id}">Ver</button>${alertas.simulado(p.id) ? `<button class="bt bt-p" data-desfazer="${p.id}">Desfazer simulação</button>` : `<button class="bt bt-p" data-simular="${p.id}">Simular queda</button>`}<button class="bt bt-p" data-remover="${p.id}">Remover</button></div></div>`; }).join("")
+      : `<p class="nota">Nenhum alerta. Abra um produto e toque em “Me avise quando baixar”.</p>`}`;
+  }
+  function tudo() {
+    mural(); folha(location.hash.slice(1));
+    alertas.novosDisparos().forEach(d => toast(`Baixou! ${esc(nomeCompleto(d.produto))} por ${brl(d.melhor.total)}`, `na ${esc(loja(d.melhor.loja).nome)} · seu alvo era ${brl(d.alerta.alvo)}`));
+    if (!$g.hidden) gaveta();
+  }
+  const fecharFolha = () => { history.replaceState(null, "", location.pathname + location.search); formAberto = false; tudo(); };
+  document.getElementById("mural").addEventListener("click", e => { const b = e.target.closest(".post"); if (b) location.hash = b.dataset.id; });
+  document.getElementById("chips").addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) { cat = b.dataset.cat; mural(); } });
+  document.getElementById("campo").addEventListener("input", e => { filtro = e.target.value; mural(); });
+  document.getElementById("veu").onclick = fecharFolha;
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$g.hidden) $g.hidden = true; else if (location.hash) fecharFolha(); } });
+  const $f = document.getElementById("folha");
+  $f.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "fechar") fecharFolha();
+    if (b.id === "bt-alerta") { formAberto = !formAberto; document.getElementById("form-alerta").hidden = !formAberto; if (formAberto) document.getElementById("alvo").focus(); }
+    if (b.id === "bt-remover") { alertas.remover(location.hash.slice(1)); formAberto = false; toast("Alerta removido"); tudo(); }
+  });
+  $f.addEventListener("submit", e => {
+    e.preventDefault();
+    const v = lerValor(document.getElementById("alvo").value);
+    if (!(v > 0)) { toast("Digite um preço", "por exemplo 199,90"); return; }
+    alertas.salvar(location.hash.slice(1), v); formAberto = false; toast("Alerta criado", `Avisamos aqui quando o preço final chegar a ${brl(v)}.`); tudo();
+  });
+  document.getElementById("abrir-alertas").onclick = () => { $g.hidden = !$g.hidden; if (!$g.hidden) gaveta(); };
+  $g.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "fechar-g") $g.hidden = true;
+    else if (b.dataset.ver) { $g.hidden = true; location.hash = b.dataset.ver; }
+    else if (b.dataset.simular) { alertas.simular(b.dataset.simular); tudo(); }
+    else if (b.dataset.desfazer) { alertas.desfazer(b.dataset.desfazer); tudo(); }
+    else if (b.dataset.remover) { alertas.remover(b.dataset.remover); tudo(); }
+  });
+  window.addEventListener("hashchange", () => { formAberto = false; tudo(); });
+  tudo();
+})();
+</script>
+
+</html>

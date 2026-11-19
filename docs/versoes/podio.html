@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Comparador Pódio</title>
+<link rel="icon" type="image/svg+xml" href="../assets/marca/favicon.svg">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout A · Pódio — página de lançamento: foto enorme com o brilho da cor do produto,
+   as 3 lojas mais baratas num pódio 2º | 1º | 3º, o resto numa lista discreta.
+   Visual escuro de propósito, sem tema claro. */
+:root {
+  color-scheme: dark;
+  --bg: #050507;
+  --surface: #0d0d12;
+  --surface-2: #15151c;
+  --line: rgba(255,255,255,.08);
+  --fg: #f4f3f0;
+  --muted: #8e8d96;
+  --glow: #a9cdf0;            /* trocado pela cor de cada produto */
+  --ouro: #f2d38a; --prata: #cdd5df; --bronze: #d9a07a;
+  --bom: #6ff0b0; --caro: #ffb35c;
+  --display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); overflow-x: clip; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+
+/* barra */
+.barra { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; background: rgba(5,5,7,.82); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.barra .wrap { display: flex; align-items: center; gap: 16px; padding-block: 12px; }
+.marca { font: 600 15px/1 var(--display); letter-spacing: .02em; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.marca i { width: 10px; height: 10px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 14px var(--glow); transition: background .6s, box-shadow .6s; }
+.busca { position: relative; flex: 1; max-width: 420px; margin-left: auto; }
+.busca input { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 9px 16px 9px 38px; outline: none; }
+.busca input:focus { border-color: var(--glow); }
+.busca svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.sug { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px; padding: 6px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+.sug button { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: 0; border-radius: 10px; padding: 8px; text-align: left; cursor: pointer; }
+.sug button:hover, .sug button.sel { background: rgba(255,255,255,.06); }
+.sug img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+.sug small { margin-left: auto; color: var(--muted); }
+.btn-alertas { background: none; border: 1px solid var(--line); border-radius: 99px; padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.btn-alertas:hover { border-color: var(--glow); }
+.btn-alertas b { background: var(--fg); color: var(--bg); font-size: 11px; border-radius: 99px; padding: 1px 7px; }
+.demo { color: var(--muted); font-size: 12px; text-align: center; padding-block: 6px; border-bottom: 1px solid var(--line); letter-spacing: .02em; }
+.demo b { color: var(--caro); font-weight: 600; }
+
+/* trilho de produtos */
+.trilho { display: flex; gap: 10px; overflow-x: auto; padding-block: 18px 6px; scrollbar-width: none; }
+.trilho::-webkit-scrollbar { display: none; }
+.trilho a { flex: none; display: grid; justify-items: center; gap: 6px; width: 74px; text-decoration: none; color: var(--muted); font-size: 11px; text-align: center; line-height: 1.25; }
+.trilho img { width: 56px; height: 56px; object-fit: cover; border-radius: 50%; border: 2px solid transparent; opacity: .55; transition: opacity .2s, border-color .2s, transform .2s; }
+.trilho a:hover img { opacity: .9; }
+.trilho a.ativo { color: var(--fg); }
+.trilho a.ativo img { opacity: 1; border-color: var(--glow); transform: scale(1.06); box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 60%, transparent); }
+
+/* palco */
+.palco { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 72px); align-items: center; padding-block: 28px 56px; }
+.foto { position: relative; aspect-ratio: 1; max-width: 100%; display: grid; place-items: center; }
+.foto::before { content: ""; position: absolute; inset: -4%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--glow) 85%, transparent), color-mix(in srgb, var(--glow) 35%, transparent) 55%, transparent 100%); filter: blur(46px); opacity: .75; transition: background .6s; animation: respira 7s ease-in-out infinite; }
+.foto::after { content: ""; position: absolute; width: 96%; aspect-ratio: 1; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--glow) 35%, transparent); }
+.foto img { position: relative; z-index: 1; width: 76%; aspect-ratio: 1; object-fit: cover; border-radius: 36px; box-shadow: 0 40px 80px -20px rgba(0,0,0,.9), 0 0 60px -10px var(--glow), 0 0 0 1px rgba(255,255,255,.1); }
+.foto figcaption { position: absolute; bottom: 0; left: 9%; right: 9%; font-size: 11px; color: var(--muted); text-align: center; }
+@keyframes respira { 50% { transform: scale(1.04); opacity: .85; } }
+.info { display: grid; gap: 18px; min-width: 0; }
+.marca-prod { font: 600 12px/1 var(--display); letter-spacing: .28em; text-transform: uppercase; color: var(--glow); }
+h1 { font: 800 clamp(34px, 5vw, 60px)/1.02 var(--display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.specs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.specs li { border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px; font-size: 13px; color: var(--muted); }
+.preco-final { display: grid; gap: 4px; padding-top: 6px; }
+.preco-final small { color: var(--muted); font-size: 13px; }
+.preco-final strong { font: 600 clamp(40px, 6vw, 64px)/1 var(--display); letter-spacing: -.03em; }
+.preco-final strong span { font-size: .45em; vertical-align: .9em; margin-right: 6px; color: var(--muted); font-weight: 400; }
+.onde { color: var(--muted); }
+.onde b { color: var(--fg); }
+.selo { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 99px; width: fit-content; }
+.selo::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.selo.baixa { color: var(--bom); background: rgba(111,240,176,.1); }
+.selo.alta { color: var(--caro); background: rgba(255,179,92,.1); }
+.selo.normal { color: var(--muted); background: rgba(255,255,255,.05); }
+.acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { border: 0; border-radius: 99px; padding: 13px 22px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.btn-luz { background: var(--fg); color: var(--bg); }
+.btn-luz:hover { background: var(--glow); }
+.btn-vazio { background: none; border: 1px solid rgba(255,255,255,.2); }
+.btn-vazio:hover { border-color: var(--glow); color: var(--glow); }
+.btn-p { padding: 8px 14px; font-size: 13px; }
+.form-alerta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px 10px 10px 16px; }
+.form-alerta label { color: var(--muted); font-size: 14px; }
+.form-alerta input { width: 120px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; outline: none; font-weight: 600; }
+.form-alerta input:focus { border-color: var(--glow); }
+
+/* pódio */
+.secao { padding-block: 40px; border-top: 1px solid var(--line); }
+.secao h2 { font: 600 clamp(22px, 3vw, 30px)/1.15 var(--display); margin: 0 0 6px; letter-spacing: -.01em; }
+.secao > .wrap > p.sub { color: var(--muted); margin: 0 0 28px; }
+.podio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: end; }
+.degrau { display: grid; gap: 0; min-width: 0; }
+.cartao { background: var(--surface); border: 1px solid var(--line); border-radius: 22px 22px 0 0; padding: 20px; display: grid; gap: 10px; }
+.p1 .cartao { border-color: color-mix(in srgb, var(--ouro) 40%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--glow) 10%, var(--surface)), var(--surface)); }
+.loja-nome { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.sigla { font: 600 10px/1 var(--display); letter-spacing: .08em; border: 1px solid var(--line); border-radius: 8px; padding: 6px 7px; color: var(--muted); }
+.tag-imp { font-size: 11px; font-weight: 700; color: #ff8fd0; letter-spacing: .04em; }
+.cartao .total { font: 600 clamp(22px, 2.6vw, 32px)/1.05 var(--display); letter-spacing: -.02em; }
+.p1 .cartao .total { font-size: clamp(26px, 3.2vw, 40px); }
+.conta { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.conta .imp { color: #ff8fd0; }
+.prazo { font-size: 13px; color: var(--muted); }
+.base { display: grid; place-items: center; border-radius: 0 0 14px 14px; font: 800 44px/1 var(--display); color: rgba(0,0,0,.55); }
+.p1 .base { height: 132px; background: linear-gradient(180deg, var(--ouro), #b8954a); }
+.p2 .base { height: 92px; background: linear-gradient(180deg, var(--prata), #8e98a6); }
+.p3 .base { height: 64px; background: linear-gradient(180deg, var(--bronze), #9a6342); }
+.p1 { order: 2; } .p2 { order: 1; } .p3 { order: 3; }
+
+.engana { margin-top: 26px; display: flex; gap: 14px; align-items: flex-start; background: rgba(255,143,208,.06); border: 1px solid rgba(255,143,208,.25); border-radius: 18px; padding: 16px 18px; }
+.engana svg { flex: none; color: #ff8fd0; margin-top: 2px; }
+.engana p { margin: 0; color: #e8cfe0; }
+.engana b { color: var(--fg); }
+
+.outras { display: grid; gap: 2px; margin-top: 26px; }
+.linha { display: grid; grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, 2.4fr) auto auto; gap: 16px; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--line); }
+.linha .pos { font: 600 14px var(--display); color: var(--muted); }
+.linha .total { font: 600 18px var(--display); white-space: nowrap; }
+
+/* gráfico */
+.grafico { width: 100%; height: auto; display: block; }
+.grafico text { fill: var(--muted); font: 11px var(--body); }
+.cabeca-graf { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.cabeca-graf p { margin: 0; color: var(--muted); }
+.rodape { color: var(--muted); font-size: 12px; padding-block: 28px 48px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+
+/* gaveta de alertas */
+.gaveta { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); z-index: 30; background: var(--surface); border-left: 1px solid var(--line); padding: calc(20px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) 20px; overflow-y: auto; box-shadow: -30px 0 80px rgba(0,0,0,.6); display: grid; align-content: start; gap: 14px; }
+.gaveta header { display: flex; justify-content: space-between; align-items: center; }
+.gaveta h2 { font: 600 20px var(--display); margin: 0; }
+.fechar { background: none; border: 1px solid var(--line); border-radius: 50%; width: 36px; height: 36px; cursor: pointer; }
+.al { display: grid; grid-template-columns: 56px 1fr; gap: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.al.bateu { border-color: var(--bom); }
+.al img { width: 56px; height: 56px; object-fit: cover; border-radius: 12px; }
+.al a { font-weight: 700; text-decoration: none; }
+.al .nums { font-size: 13px; color: var(--muted); }
+.al .nums b { color: var(--fg); }
+.al .bts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.veu { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 29; }
+.toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: grid; gap: 8px; width: min(440px, calc(100vw - 32px)); }
+.toasts div { background: var(--fg); color: var(--bg); border-radius: 16px; padding: 12px 16px; font-weight: 600; box-shadow: 0 20px 50px rgba(0,0,0,.5); animation: sobe .3s ease-out; }
+.toasts div small { display: block; font-weight: 500; opacity: .75; }
+@keyframes sobe { from { transform: translateY(14px); opacity: 0; } }
+
+@media (max-width: 820px) {
+  .palco { grid-template-columns: 1fr; padding-top: 8px; }
+  .foto { width: min(100%, 420px); justify-self: center; }
+  .podio { grid-template-columns: 1fr; gap: 10px; }
+  .degrau { grid-template-columns: 64px 1fr; }
+  .p1, .p2, .p3 { order: 0; }
+  .base { height: auto !important; border-radius: 18px 0 0 18px; font-size: 28px; grid-row: 1; grid-column: 1; }
+  .cartao { border-radius: 0 18px 18px 0; grid-column: 2; }
+  .linha { grid-template-columns: 32px 1fr auto; }
+  .linha .conta { grid-column: 2 / -1; grid-row: 2; }
+  .linha .prazo { display: none; }
+  .btn-alertas span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<header class="barra">
+  <div class="wrap">
+    <a class="marca" href="#"><i></i><span id="nome-site">Comparador</span></a>
+    <div class="busca">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="campo" type="search" placeholder="Buscar AirPods, Kindle, JBL..." autocomplete="off" aria-label="Buscar produto">
+      <div class="sug" id="sug" hidden></div>
+    </div>
+    <button class="btn-alertas" id="abrir-gaveta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span>Meus alertas</span><b id="qtd">0</b></button>
+  </div>
+  <div class="demo"><b>Preços de demonstração.</b> Produtos reais, valores inventados para o protótipo.</div>
+</header>
+
+<main id="app"></main>
+<div class="veu" id="veu" hidden></div>
+<aside class="gaveta" id="gaveta" hidden aria-label="Meus alertas"></aside>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>window.RAIZ = "../";</script>
+<script src="../config.js"></script>
+<script src="../dados/ofertas-exemplo.js"></script>
+<script src="../nucleo.js"></script>
+<script>
+(function () {
+  const { D, brl, esc, loja, produto, resumo, linkLoja, conta, regra, credito, buscar, alertas, lerValor, dataCurta, meses, nomeCompleto } = N;
+  const $app = document.getElementById("app");
+  document.getElementById("nome-site").textContent = N.C.nomeDoSite;
+  let formAberto = false;
+
+  const atual = () => produto(location.hash.slice(1)) || D.produtos[0];
+  const contaHTML = o => esc(conta(o)).replace(/(\+ imposto [^+]+\+ ICMS [^=]+)/, '<span class="imp">$1</span>');
+  const precoGrande = v => { const [r, c] = brl(v).replace("R$", "").trim().split(","); return `<span>R$</span>${r}<small style="font-size:.5em">,${c}</small>`; };
+
+  function render() {
+    const p = atual(), r = resumo(p), m = r.melhor, lm = loja(m.loja);
+    const alerta = alertas.de(p.id);
+    document.documentElement.style.setProperty("--glow", p.cor);
+    const [o1, o2, o3] = r.lista, resto = r.lista.slice(3);
+    const degrau = (o, n) => o ? `<div class="degrau p${n}">
+        <div class="cartao">
+          <div class="loja-nome"><span class="sigla">${loja(o.loja).sigla}</span>${esc(loja(o.loja).nome)}${o.internacional ? '<span class="tag-imp">importado</span>' : ""}</div>
+          <div class="total num">${brl(o.total)}</div>
+          <div class="conta">${contaHTML(o)}</div>
+          <div class="prazo">Chega em ${o.prazoDias} dias</div>
+          <a class="btn ${n === 1 ? "btn-luz" : "btn-vazio"} btn-p" href="${linkLoja(o, p)}" target="_blank" rel="noopener">Ir para a loja ↗</a>
+        </div>
+        <div class="base">${n}</div>
+      </div>` : "";
+
+    $app.innerHTML = `
+      <nav class="wrap trilho" aria-label="Produtos">${D.produtos.map(x => `<a href="#${x.id}" class="${x.id === p.id ? "ativo" : ""}"><img src="${x.foto}" alt="">${esc(x.marca)}<br>${esc(x.nome.replace(x.marca + " ", ""))}</a>`).join("")}</nav>
+
+      <section class="wrap palco">
+        <figure class="foto" style="margin:0"><img src="${p.foto}" alt="${esc(nomeCompleto(p))}"><figcaption>${esc(credito(p))}</figcaption></figure>
+        <div class="info">
+          <span class="marca-prod">${esc(p.marca)} · ${esc(p.categoria)}</span>
+          <h1>${esc(p.nome)}</h1>
+          <ul class="specs">${p.specs.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+          <div class="preco-final">
+            <small>Menor preço final na sua casa, com frete e impostos</small>
+            <strong class="num">${precoGrande(m.total)}</strong>
+          </div>
+          <div class="onde">na <b>${esc(lm.nome)}</b> · chega em ${m.prazoDias} dias · ${r.lista.length} lojas comparadas</div>
+          <span class="selo ${r.selo.tipo}">${r.selo.texto}</span>
+          <div class="acoes">
+            <a class="btn btn-luz" href="${linkLoja(m, p)}" target="_blank" rel="noopener">Comprar na ${esc(lm.nome)} ↗</a>
+            <button class="btn btn-vazio" id="bt-alerta">${alerta ? "Alerta em " + brl(alerta.alvo) : "Me avise quando baixar"}</button>
+          </div>
+          <form class="form-alerta" id="form-alerta" ${formAberto ? "" : "hidden"}>
+            <label for="alvo">Avise quando chegar a</label>
+            <input id="alvo" inputmode="decimal" value="${(alerta ? alerta.alvo : Math.floor(m.total * 0.9)).toFixed(2).replace(".", ",")}">
+            <button class="btn btn-luz btn-p" type="submit">${alerta ? "Atualizar" : "Criar alerta"}</button>
+            ${alerta ? '<button class="btn btn-vazio btn-p" type="button" id="bt-remover">Remover</button>' : ""}
+          </form>
+        </div>
+      </section>
+
+      <section class="secao"><div class="wrap">
+        <h2>O pódio do preço final</h2>
+        <p class="sub">As três lojas mais baratas depois de somar frete e impostos.</p>
+        <div class="podio">${degrau(o1, 1)}${degrau(o2, 2)}${degrau(o3, 3)}</div>
+        ${r.vitrineEngana ? `<div class="engana"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <p>Na vitrine, a <b>${esc(loja(r.porVitrine.loja).nome)}</b> parece a mais barata, com <b>${brl(r.porVitrine.preco)}</b>. Somando frete e impostos, fica <b>${brl(r.porVitrine.total)}</b> e cai para o <b>${r.posVitrine}º lugar</b>.</p></div>` : ""}
+        ${resto.length ? `<div class="outras">${resto.map((o, i) => `<div class="linha">
+            <span class="pos">${i + 4}º</span>
+            <span class="loja-nome"><span class="sigla">${loja(o.loja).sigla}</span>${esc(loja(o.loja).nome)}${o.internacional ? '<span class="tag-imp">importado</span>' : ""}</span>
+            <span class="conta">${contaHTML(o)}</span>
+            <span class="prazo">${o.prazoDias} dias</span>
+            <span class="total num">${brl(o.total)}</span>
+          </div>`).join("")}</div>` : ""}
+      </div></section>
+
+      <section class="secao"><div class="wrap">
+        <div class="cabeca-graf">
+          <div><h2>Seis meses de preço</h2><p>Preço de vitrine na ${esc(lm.nome)}, semana a semana.</p></div>
+          <span class="selo ${r.selo.tipo}">${r.selo.texto}</span>
+        </div>
+        ${grafico(m)}
+      </div></section>
+
+      <footer class="wrap rodape">
+        <span>${esc(regra())}</span>
+        <span>Protótipo de estudo. Preços de demonstração. Fotos do Wikimedia Commons com licença livre; nomes de marcas e lojas só como texto.</span>
+      </footer>`;
+    atualizarContador();
+    avisar();
+  }
+
+  function grafico(o) {
+    const estreito = window.innerWidth < 700;
+    const W = estreito ? 520 : 1100, H = estreito ? 300 : 260, pl = 64, pr = 20, pt = 26, pb = 30;
+    const h = o.historico, n = h.length, vals = h.map(x => x.preco);
+    let min = Math.min(...vals), max = Math.max(...vals);
+    const pad = (max - min) * 0.15 || max * 0.05; min -= pad; max += pad;
+    const x = i => pl + i / (n - 1) * (W - pl - pr), y = v => pt + (1 - (v - min) / (max - min)) * (H - pt - pb);
+    const linha = h.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.preco).toFixed(1)}`).join("");
+    const mm = N.melhorMomento(o);
+    let eixo = "", ult = -1;
+    h.forEach((p, i) => { const k = +p.data.slice(5, 7) - 1; if (k !== ult && i) eixo += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${meses[k]}</text>`; ult = k; });
+    const ticks = [min + pad, (min + max) / 2, max - pad].map(v => `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,.06)"/><text x="${pl - 10}" y="${y(v) + 4}" text-anchor="end">${N.brlCurto(v)}</text>`).join("");
+    return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Histórico de preço">
+      <defs><linearGradient id="gg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${o && N.produto(o.produtoId).cor}" stop-opacity=".35"/><stop offset="1" stop-color="${N.produto(o.produtoId).cor}" stop-opacity="0"/></linearGradient></defs>
+      ${ticks}${eixo}
+      <path d="${linha}L${x(n - 1)},${H - pb}L${x(0)},${H - pb}Z" fill="url(#gg)"/>
+      <path d="${linha}" fill="none" stroke="${N.produto(o.produtoId).cor}" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="${x(mm.indice)}" cy="${y(mm.preco)}" r="5" fill="${N.produto(o.produtoId).cor}"/>
+      <text x="${Math.min(Math.max(x(mm.indice), pl + 100), W - pr - 100)}" y="${y(mm.preco) + 22}" text-anchor="middle" style="fill:var(--fg)">mais barato: ${brl(mm.preco)} em ${dataCurta(mm.data)}</text>
+      <circle cx="${x(n - 1)}" cy="${y(h[n - 1].preco)}" r="6" fill="var(--bg)" stroke="var(--fg)" stroke-width="2"/>
+      <text x="${x(n - 1) - 10}" y="${y(h[n - 1].preco) - 14}" text-anchor="end" style="fill:var(--fg)">hoje ${brl(h[n - 1].preco)}</text>
+    </svg>`;
+  }
+
+  // ---------- alertas ----------
+  const $g = document.getElementById("gaveta"), $veu = document.getElementById("veu");
+  function atualizarContador() { document.getElementById("qtd").textContent = alertas.lista().length; }
+  function toast(t, s) { const el = document.createElement("div"); el.innerHTML = `${t}${s ? `<small>${s}</small>` : ""}`; document.getElementById("toasts").appendChild(el); setTimeout(() => el.remove(), 6000); }
+  function avisar() { alertas.novosDisparos().forEach(d => toast(`Baixou! ${esc(nomeCompleto(d.produto))} por ${brl(d.melhor.total)}`, `na ${esc(loja(d.melhor.loja).nome)} · seu alvo era ${brl(d.alerta.alvo)}`)); }
+  function gaveta() {
+    const l = alertas.lista();
+    $g.innerHTML = `<header><h2>Meus alertas</h2><button class="fechar" id="fechar" aria-label="Fechar">✕</button></header>
+      <p style="margin:0;color:var(--muted);font-size:14px">Ficam guardados neste navegador. Na demonstração, “Simular queda” mostra como chega o aviso.</p>
+      ${l.length ? l.map(a => { const p = produto(a.produtoId); if (!p) return ""; const m = resumo(p).melhor, ok = m.total <= a.alvo;
+        return `<div class="al ${ok ? "bateu" : ""}"><img src="${p.foto}" alt=""><div><a href="#${p.id}">${esc(nomeCompleto(p))}</a>
+          <div class="nums">agora <b>${brl(m.total)}</b> · alvo <b>${brl(a.alvo)}</b></div>
+          <span class="selo ${ok ? "baixa" : "normal"}" style="margin-top:6px">${ok ? "Baixou!" : "Esperando"}</span></div>
+          <div class="bts">${alertas.simulado(p.id) ? `<button class="btn btn-vazio btn-p" data-desfazer="${p.id}">Desfazer simulação</button>` : `<button class="btn btn-vazio btn-p" data-simular="${p.id}">Simular queda</button>`}<button class="btn btn-vazio btn-p" data-remover="${p.id}">Remover</button></div></div>`; }).join("")
+      : `<p>Nenhum alerta ainda. Abra um produto e toque em “Me avise quando baixar”.</p>`}`;
+  }
+  function abrirGaveta(abrir) { $g.hidden = !abrir; $veu.hidden = !abrir; if (abrir) gaveta(); }
+  document.getElementById("abrir-gaveta").onclick = () => abrirGaveta(true);
+  $veu.onclick = () => abrirGaveta(false);
+  $g.addEventListener("click", e => {
+    const b = e.target.closest("button, a"); if (!b) return;
+    if (b.id === "fechar" || b.tagName === "A") abrirGaveta(false);
+    else if (b.dataset.simular) { alertas.simular(b.dataset.simular); render(); gaveta(); }
+    else if (b.dataset.desfazer) { alertas.desfazer(b.dataset.desfazer); render(); gaveta(); }
+    else if (b.dataset.remover) { alertas.remover(b.dataset.remover); render(); gaveta(); }
+  });
+  $app.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "bt-alerta") { formAberto = !formAberto; document.getElementById("form-alerta").hidden = !formAberto; if (formAberto) document.getElementById("alvo").focus(); }
+    if (b.id === "bt-remover") { alertas.remover(atual().id); formAberto = false; toast("Alerta removido"); render(); }
+  });
+  $app.addEventListener("submit", e => {
+    e.preventDefault();
+    const v = lerValor(document.getElementById("alvo").value);
+    if (!(v > 0)) { toast("Digite um preço", "por exemplo 199,90"); return; }
+    alertas.salvar(atual().id, v); formAberto = false;
+    toast("Alerta criado", `Avisamos aqui quando o preço final chegar a ${brl(v)}.`); render();
+  });
+
+  // ---------- busca ----------
+  const $c = document.getElementById("campo"), $s = document.getElementById("sug");
+  let itens = [], sel = -1;
+  function sugerir() {
+    itens = $c.value.trim() ? buscar($c.value).slice(0, 6) : []; sel = -1;
+    $s.innerHTML = itens.length ? itens.map((p, i) => `<button type="button" data-i="${i}"><img src="${p.foto}" alt="">${esc(nomeCompleto(p))}<small class="num">${brl(resumo(p).melhor.total)}</small></button>`).join("")
+      : `<button type="button" disabled>Nenhum produto com esse nome na demonstração</button>`;
+    $s.hidden = !$c.value.trim();
+  }
+  function escolher(p) { $s.hidden = true; $c.value = ""; location.hash = p.id; }
+  $c.addEventListener("input", sugerir);
+  $c.addEventListener("keydown", e => {
+    if (!itens.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + itens.length) % itens.length; $s.querySelectorAll("button").forEach((b, i) => b.classList.toggle("sel", i === sel)); }
+    if (e.key === "Enter") { e.preventDefault(); escolher(itens[Math.max(sel, 0)]); }
+    if (e.key === "Escape") $s.hidden = true;
+  });
+  $s.addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (b) escolher(itens[+b.dataset.i]); });
+  document.addEventListener("click", e => { if (!e.target.closest(".busca")) $s.hidden = true; });
+
+  window.addEventListener("hashchange", () => { formAberto = false; render(); window.scrollTo({ top: 0, behavior: "smooth" }); document.querySelector(".trilho a.ativo")?.scrollIntoView({ inline: "center", block: "nearest" }); });
+  render();
+})();
+</script>
+
+</html>

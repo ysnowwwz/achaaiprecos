@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- AchaAI: lupa com a seta de preço caindo dentro -->
+  <rect width="64" height="64" rx="16" fill="#ff5b1f"/>
+  <circle cx="27" cy="27" r="14" fill="none" stroke="#07070a" stroke-width="6"/>
+  <path d="M37.5 37.5 49 49" stroke="#07070a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M21 24.5l6 6 6-6" fill="none" stroke="#07070a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
