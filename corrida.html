@@ -1,0 +1,736 @@
+<title>A Corrida do Preço</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* A Corrida do Preço — o pódio virou espetáculo.
+   Entrada: produtos recortados flutuando em profundidade. Produto: foto que inclina, raio-X do preço,
+   corrida das lojas (vitrine → frete → imposto → ICMS), pódio 3D, histórico com preço-alvo arrastável.
+   Escuro de propósito, um acento só (laranja de largada). */
+:root {
+  color-scheme: dark;
+  --bg: #07070a;
+  --surface: #101016;
+  --surface-2: #17171f;
+  --line: rgba(255,255,255,.08);
+  --fg: #f3f1ec;
+  --muted: #8d8b95;
+  --accent: #ff5b1f;            /* o único acento: largada, imposto, ação */
+  --accent-2: #ffa071;          /* ICMS, tom claro do acento */
+  --seg-prod: #e8e5de; --seg-frete: #7d8698;
+  --ouro: #f1cd78; --prata: #cfd6df; --bronze: #d6996d;
+  --glow: #a9cdf0;              /* cor do produto aberto */
+  --display: "Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+  --body: "Geist", "Segoe UI", system-ui, sans-serif;
+  --mono: "Geist Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); overflow-x: clip; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--bg); }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.grao { position: fixed; inset: 0; pointer-events: none; z-index: 60; opacity: .05; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+/* barra */
+.barra { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); z-index: 40; transition: background .3s, border-color .3s; border-bottom: 1px solid transparent; }
+.barra.rolou { background: rgba(7,7,10,.82); backdrop-filter: blur(14px); border-bottom-color: var(--line); }
+.barra .wrap { display: flex; align-items: center; gap: 10px; padding-block: 14px; }
+.logo { font: 900 22px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.logo i { width: 18px; height: 10px; background: var(--accent); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.barra .dir { margin-left: auto; display: flex; gap: 8px; }
+.pilula { background: rgba(16,16,22,.72); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 99px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; text-decoration: none; }
+.pilula:hover { border-color: rgba(255,255,255,.25); }
+.pilula b { background: var(--accent); color: #140600; border-radius: 99px; padding: 0 7px; font-size: 11px; }
+.sino.toca svg { animation: sino .9s ease; transform-origin: 50% 10%; }
+@keyframes sino { 15% { transform: rotate(18deg); } 35% { transform: rotate(-14deg); } 55% { transform: rotate(9deg); } 75% { transform: rotate(-5deg); } }
+
+/* ================= ENTRADA ================= */
+.palco { position: relative; height: 100svh; min-height: 640px; max-height: 1000px; overflow: hidden; }
+.palco::after { content: ""; position: absolute; inset: auto 0 0; height: 140px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; z-index: 3; }
+.halo { position: absolute; width: 70vmax; height: 70vmax; left: 55%; top: 40%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(255,91,31,.16), transparent 70%); pointer-events: none; }
+.chao { position: absolute; left: -10%; right: -10%; bottom: -10%; height: 55%; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 60px 60px; transform: perspective(600px) rotateX(62deg); transform-origin: top; mask-image: linear-gradient(transparent, #000 30%, transparent); pointer-events: none; }
+.nuvem { position: absolute; inset: 0; z-index: 1; }
+.item { position: absolute; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.item .flutua { display: grid; justify-items: center; gap: 6px; }
+.item img { display: block; width: var(--w, 160px); height: auto; max-height: calc(var(--w, 160px) * 1.1); object-fit: contain; filter: drop-shadow(0 24px 30px rgba(0,0,0,.6)); pointer-events: none; transition: filter .3s; }
+.item.longe img { filter: blur(2px) drop-shadow(0 18px 20px rgba(0,0,0,.6)); }
+.item:hover img { filter: drop-shadow(0 24px 30px rgba(0,0,0,.6)) drop-shadow(0 0 22px rgba(255,91,31,.35)); }
+.item .etq { font: 500 11px/1.25 var(--mono); text-align: center; color: var(--muted); white-space: nowrap; opacity: 0; transform: translateY(-4px); transition: opacity .25s, transform .25s; }
+.item .etq b { display: block; color: var(--fg); font-weight: 600; font-size: 12px; }
+.item:hover .etq, .item.frente .etq { opacity: 1; transform: none; }
+.item.alvo-drop img { filter: drop-shadow(0 0 0 transparent) drop-shadow(0 0 26px var(--accent)); }
+.item.arrastando { cursor: grabbing; z-index: 30 !important; }
+.chamada { position: absolute; z-index: 4; left: max(20px, env(safe-area-inset-left, 0px)); bottom: 13%; width: min(560px, 46vw); display: grid; gap: 18px; pointer-events: none; }
+.chamada > * { pointer-events: auto; }
+.chamada .eyebrow { font: 600 12px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+.chamada h1 { margin: 0; font: 900 clamp(54px, 7.4vw, 112px)/.86 var(--display); letter-spacing: -.01em; text-transform: uppercase; }
+.chamada h1 .risco { color: var(--muted); background: linear-gradient(var(--accent), var(--accent)) no-repeat 0 54% / 100% .09em; -webkit-box-decoration-break: clone; box-decoration-break: clone; animation: risca .8s 1s cubic-bezier(.7,0,.2,1) backwards; }
+@keyframes risca { from { background-size: 0% .09em; } }
+.chamada p { margin: 0; font-size: 18px; color: #cfccc6; max-width: 40ch; }
+.chamada p b { color: var(--fg); }
+.campo-busca { position: relative; display: block; }
+.campo-busca input { width: 100%; background: rgba(16,16,22,.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; padding: 18px 20px 18px 52px; font-size: 18px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.campo-busca input:focus { border-color: var(--accent); box-shadow: 0 0 0 6px rgba(255,91,31,.14); }
+.campo-busca svg { z-index: 1; position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.dica { font: 12px var(--mono); color: var(--muted); }
+.dica span { color: var(--fg); }
+
+/* ================= PRODUTO ================= */
+.vista { padding-top: 84px; }
+.voltar { font: 500 13px var(--mono); color: var(--muted); text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
+.voltar:hover { color: var(--fg); }
+.heroi { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(20px, 5vw, 80px); align-items: center; padding-block: 18px 60px; }
+.cartao3d { position: relative; aspect-ratio: 1; display: grid; place-items: center; perspective: 900px; }
+.cartao3d .luz { position: absolute; inset: 4%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--glow) 90%, transparent), color-mix(in srgb, var(--glow) 30%, transparent) 50%, transparent); filter: blur(50px); opacity: .55; }
+.cartao3d::before { content: attr(data-marca); position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); font: 900 clamp(120px, 19vw, 300px)/.8 var(--display); text-transform: uppercase; color: transparent; -webkit-text-stroke: 1.5px rgba(243,241,236,.09); white-space: nowrap; pointer-events: none; }
+.cartao3d .anel { position: absolute; inset: 9%; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--glow) 30%, transparent); }
+.cartao3d .anel.b { inset: 20%; border-style: dashed; opacity: .5; animation: gira 40s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+.cartao3d .inclina { position: relative; width: 74%; transform-style: preserve-3d; will-change: transform; }
+.cartao3d img { width: 100%; max-height: 520px; object-fit: contain; display: block; filter: drop-shadow(0 40px 50px rgba(0,0,0,.75)); transform: translateZ(40px); }
+.cartao3d .brilho { position: absolute; inset: 0; border-radius: 30px; background: radial-gradient(circle at var(--bx, 50%) var(--by, 30%), rgba(255,255,255,.18), transparent 45%); mix-blend-mode: overlay; pointer-events: none; }
+.cartao3d figcaption { position: absolute; bottom: 2%; left: 0; right: 0; text-align: center; font: 10.5px var(--mono); color: var(--muted); }
+.info { display: grid; gap: 18px; min-width: 0; }
+.marca-prod { font: 600 12px var(--mono); letter-spacing: .24em; text-transform: uppercase; color: var(--glow); }
+.info h1 { margin: 0; font: 900 clamp(48px, 6.6vw, 100px)/.86 var(--display); text-transform: uppercase; letter-spacing: -.005em; text-wrap: balance; }
+.specs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; list-style: none; }
+.specs li { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 4px 11px; }
+.final-box { display: grid; gap: 2px; }
+.final-box small { color: var(--muted); font-size: 13px; }
+.final-box strong { font: 900 clamp(56px, 7vw, 96px)/.9 var(--display); letter-spacing: .005em; }
+.final-box strong .rs { font-size: .42em; color: var(--muted); margin-right: .2em; vertical-align: .9em; font-weight: 700; }
+.final-box .onde { color: var(--muted); }
+.final-box .onde b { color: var(--fg); }
+.economia { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.economia .val { font: 800 30px/1 var(--display); color: var(--accent); white-space: nowrap; }
+.economia span { font-size: 13.5px; color: #cfccc6; line-height: 1.35; }
+.selo { display: inline-flex; align-items: center; gap: 8px; font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 10px; border-radius: 8px; width: fit-content; }
+.selo::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.selo.baixa { color: #74eeb0; background: rgba(116,238,176,.1); }
+.selo.alta { color: var(--accent-2); background: rgba(255,160,113,.1); }
+.selo.normal { color: var(--muted); background: rgba(255,255,255,.05); }
+.acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+.bt { border: 0; border-radius: 14px; padding: 14px 20px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; transition: transform .15s, background .2s; }
+.bt:active { transform: scale(.97); }
+.bt-acento { background: var(--accent); color: #140600; }
+.bt-acento:hover { background: #ff7440; }
+.bt-linha { background: transparent; border: 1px solid rgba(255,255,255,.18); }
+.bt-linha:hover { border-color: var(--fg); }
+.bt-p { padding: 9px 14px; font-size: 13px; border-radius: 10px; }
+
+.secao { padding-block: 72px; border-top: 1px solid var(--line); position: relative; }
+.secao-cab { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.secao-cab h2 { margin: 0; font: 900 clamp(40px, 5vw, 72px)/.9 var(--display); text-transform: uppercase; }
+.secao-cab p { margin: 6px 0 0; color: var(--muted); max-width: 52ch; }
+.n-secao { font: 600 12px var(--mono); color: var(--accent); letter-spacing: .2em; display: block; margin-bottom: 10px; }
+
+/* raio-x */
+.raiox { position: relative; border-radius: 26px; overflow: hidden; height: 300px; background: var(--surface); border: 1px solid var(--line); touch-action: none; cursor: none; user-select: none; -webkit-user-select: none; }
+.camada { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; }
+.camada .rot { font: 600 12px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.vitrine .preco { font: 900 clamp(64px, 11vw, 150px)/.9 var(--display); }
+.vitrine .preco small { font-size: .35em; color: var(--muted); vertical-align: .9em; margin-right: .15em; }
+.raio { background: var(--accent); color: #140600; clip-path: circle(var(--r, 90px) at var(--x, 30%) var(--y, 50%)); background-image: linear-gradient(rgba(0,0,0,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.08) 1px, transparent 1px); background-size: 22px 22px; }
+.raio .rot { color: rgba(20,6,0,.7); }
+.raio .conta { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 4px 12px; font: 800 clamp(22px, 2.6vw, 34px)/1 var(--display); text-transform: uppercase; max-width: 1000px; }
+.raio .conta i { font-style: normal; opacity: .55; }
+.raio .conta .tot { font-size: 1.7em; display: block; width: 100%; margin-top: 8px; }
+.lente { position: absolute; width: calc(var(--r, 90px) * 2); height: calc(var(--r, 90px) * 2); left: var(--x, 30%); top: var(--y, 50%); transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid var(--fg); box-shadow: 0 0 0 6px rgba(243,241,236,.08), 0 20px 50px rgba(0,0,0,.5); pointer-events: none; }
+.lente::after { content: "arraste"; position: absolute; left: 50%; bottom: -30px; transform: translateX(-50%); font: 600 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fg); background: var(--bg); padding: 3px 8px; border-radius: 6px; }
+
+/* corrida */
+.placa-fase { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fase { font: 800 22px var(--display); letter-spacing: .04em; text-transform: uppercase; padding: 8px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); min-width: 250px; }
+.fase b { color: var(--accent); }
+.etapas { display: flex; gap: 6px; }
+.etapas i { width: 34px; height: 6px; border-radius: 99px; background: var(--surface-2); transition: background .3s; }
+.etapas i.on { background: var(--accent); }
+.pista { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 14px; overflow: hidden; }
+.pista::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(255,255,255,.03) 79px 80px); pointer-events: none; }
+.raias { position: relative; }
+.raia { position: absolute; left: 0; right: 0; height: 60px; display: grid; grid-template-columns: 46px 150px minmax(0, 1fr) 132px; gap: 12px; align-items: center; border-bottom: 1px dashed rgba(255,255,255,.07); }
+.raia .pos { font: 900 30px/1 var(--display); color: var(--muted); text-align: center; }
+.raia.p1 .pos { color: var(--ouro); } .raia.p2 .pos { color: var(--prata); } .raia.p3 .pos { color: var(--bronze); }
+.raia .nome { font-weight: 600; line-height: 1.15; }
+.raia .nome small { display: block; font: 11px var(--mono); color: var(--muted); font-weight: 400; }
+.raia .nome small.imp { color: var(--accent-2); }
+.trilho { position: relative; height: 26px; }
+.barra-c { position: absolute; left: 0; top: 0; bottom: 0; display: flex; border-radius: 7px; overflow: hidden; width: 100%; }
+.barra-c i { display: block; height: 100%; width: 0; }
+.barra-c i + i { box-shadow: inset 2px 0 0 var(--surface); }
+.ficha { position: absolute; top: 50%; transform: translate(6px, -50%); font: 600 10.5px var(--mono); background: var(--fg); color: var(--bg); padding: 3px 7px; border-radius: 99px; white-space: nowrap; left: 0; }
+.raia .val { text-align: right; font: 600 17px var(--mono); white-space: nowrap; }
+.queda { position: absolute; right: 6px; top: 4px; font: 600 10.5px var(--mono); color: var(--accent); opacity: 0; }
+.legenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 14px; }
+.legenda span { display: inline-flex; gap: 6px; align-items: center; }
+.legenda i { width: 12px; height: 12px; border-radius: 3px; }
+
+/* pódio 3D */
+.podio-cena { position: relative; display: grid; place-items: end center; perspective: 1100px; padding-top: 30px; min-height: 430px; }
+.podio { display: flex; align-items: flex-end; gap: clamp(10px, 2.4vw, 28px); transform: rotateX(-14deg); transform-style: preserve-3d; }
+.coluna { display: grid; justify-items: center; gap: calc(var(--Dg, 120px) / 2 + 18px); transform-style: preserve-3d; }
+.topo-info { text-align: center; display: grid; gap: 4px; justify-items: center; }
+.topo-info .loja { font: 800 24px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.topo-info .preco { font: 600 16px var(--mono); }
+.topo-info a { font: 600 11px var(--mono); color: var(--muted); text-decoration: none; letter-spacing: .08em; }
+.topo-info a:hover { color: var(--accent); }
+.cubo { --W: 210px; --D: 120px; position: relative; width: var(--W); height: var(--H); transform-style: preserve-3d; transform-origin: bottom; }
+.cubo .f { position: absolute; inset: 0; transform: translateZ(calc(var(--D) / 2)); display: grid; place-items: center; font: 900 72px/1 var(--display); color: rgba(0,0,0,.42); border-radius: 4px 4px 0 0; }
+.cubo .t { position: absolute; left: 0; width: var(--W); height: var(--D); top: calc(50% - var(--D) / 2); transform: rotateX(90deg) translateZ(calc(var(--H) / 2)); }
+.cubo .l { position: absolute; top: 0; height: var(--H); width: var(--D); left: calc(50% - var(--D) / 2); transform: rotateY(90deg) translateZ(calc(var(--W) / 2)); }
+.c1 { --H: 190px; } .c2 { --H: 130px; } .c3 { --H: 90px; }
+.c1 .f { background: linear-gradient(180deg, #f6d98f, #b8903f); } .c1 .t { background: #fbe7ae; } .c1 .l { background: #9b7633; }
+.c2 .f { background: linear-gradient(180deg, #e2e8ef, #8f99a6); } .c2 .t { background: #f1f4f8; } .c2 .l { background: #78818d; }
+.c3 .f { background: linear-gradient(180deg, #e7ae84, #9a6140); } .c3 .t { background: #f2c4a2; } .c3 .l { background: #7f4f33; }
+.vencedor-img { width: 120px; height: 90px; object-fit: contain; filter: drop-shadow(0 16px 20px rgba(0,0,0,.6)); }
+.confete { position: absolute; inset: 0; pointer-events: none; width: 100%; height: 100%; }
+.todas { margin-top: 40px; display: grid; gap: 0; }
+.todas .l { display: grid; grid-template-columns: 34px 150px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.todas .l .p { font: 800 18px var(--display); color: var(--muted); }
+.todas .conta { font: 12px/1.45 var(--mono); color: var(--muted); }
+.todas .conta .imp { color: var(--accent-2); }
+.todas .t { font: 600 16px var(--mono); white-space: nowrap; }
+.todas a { font: 600 12px var(--mono); text-decoration: none; color: var(--muted); }
+.todas a:hover { color: var(--accent); }
+
+/* histórico */
+.grafico-caixa { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 16px; }
+.grafico { width: 100%; height: auto; display: block; touch-action: none; }
+.grafico text { font: 11px var(--mono); fill: var(--muted); }
+.grafico .linha { fill: none; stroke: var(--fg); stroke-width: 2.4; stroke-linejoin: round; }
+.grafico .alvo-l { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.grafico .puxador { cursor: ns-resize; }
+.pulsa { animation: pulsa 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulsa { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(3); opacity: 0; } }
+.alvo-painel { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+.alvo-painel label { font-size: 14px; color: var(--muted); }
+.alvo-painel .v { font: 800 32px/1 var(--display); color: var(--accent); }
+.alvo-painel input[type=range] { flex: 1 1 200px; accent-color: var(--accent); }
+
+/* comparar */
+.duelo { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; padding-block: 20px 60px; }
+.lado { display: grid; justify-items: center; text-align: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 26px 20px; }
+.lado.ganha { border-color: var(--accent); }
+.lado img { width: min(260px, 70%); height: 220px; object-fit: contain; filter: drop-shadow(0 26px 30px rgba(0,0,0,.6)); }
+.lado h3 { margin: 0; font: 900 40px/.9 var(--display); text-transform: uppercase; }
+.lado .p { font: 900 54px/1 var(--display); }
+.lado .m { color: var(--muted); font-size: 14px; }
+.vs { font: 900 64px/1 var(--display); color: var(--accent); }
+.veredito { text-align: center; font-size: 18px; max-width: 60ch; margin: 0 auto; color: #cfccc6; }
+.veredito b { color: var(--fg); }
+
+/* gaveta, avisos, cursor */
+.gaveta { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); z-index: 70; background: var(--surface); border-left: 1px solid var(--line); padding: calc(20px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) 20px; overflow-y: auto; display: grid; align-content: start; gap: 14px; box-shadow: -40px 0 90px rgba(0,0,0,.6); }
+.gaveta header { display: flex; justify-content: space-between; align-items: center; }
+.gaveta h2 { margin: 0; font: 900 32px var(--display); text-transform: uppercase; }
+.al { display: grid; grid-template-columns: 64px 1fr; gap: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.al.ok { border-color: #74eeb0; }
+.al img { width: 64px; height: 64px; object-fit: contain; }
+.al a { font-weight: 600; text-decoration: none; }
+.al .n { font-size: 13px; color: var(--muted); }
+.al .n b { color: var(--fg); }
+.al .bts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.veu { position: fixed; inset: 0; z-index: 69; background: rgba(0,0,0,.55); }
+.avisos { position: fixed; z-index: 80; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; width: min(440px, calc(100vw - 32px)); }
+.avisos div { background: var(--fg); color: var(--bg); border-radius: 16px; padding: 12px 16px; font-weight: 600; box-shadow: 0 20px 50px rgba(0,0,0,.5); animation: sobe .35s cubic-bezier(.2,.8,.3,1); }
+.avisos small { display: block; font-weight: 400; opacity: .75; }
+@keyframes sobe { from { transform: translateY(16px); } }
+.cursor { position: fixed; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 1.5px solid rgba(243,241,236,.55); border-radius: 50%; pointer-events: none; z-index: 90; transition: width .2s, height .2s, margin .2s, background .2s, border-color .2s; }
+.cursor.sobre { width: 58px; height: 58px; margin: -29px 0 0 -29px; background: rgba(255,91,31,.12); border-color: var(--accent); }
+.rodape { color: var(--muted); font-size: 12px; padding-block: 30px 50px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+
+@media (max-width: 860px) {
+  .palco { height: auto; min-height: 0; max-height: none; padding-top: 80px; display: grid; }
+  .chamada { position: relative; left: auto; bottom: auto; width: auto; padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); order: -1; }
+  .chamada h1 { font-size: clamp(50px, 15vw, 80px); }
+  .chamada p { font-size: 16px; }
+  .nuvem { position: relative; height: 560px; }
+  .heroi { grid-template-columns: 1fr; padding-top: 6px; }
+  .cartao3d { width: min(100%, 440px); justify-self: center; }
+  .cartao3d .inclina { width: 62%; }
+  .cartao3d img { max-height: 300px; }
+  .raia { grid-template-columns: 30px minmax(0, 1fr) auto; grid-template-rows: auto 18px; height: 70px; row-gap: 4px; }
+  .raia .pos { font-size: 24px; grid-row: 1 / 3; }
+  .raia .trilho { grid-column: 2 / 4; grid-row: 2; height: 16px; }
+  .raia .val { font-size: 14px; }
+  .fase { min-width: 0; font-size: 18px; }
+  .cubo { --W: 100px; --D: 70px; }
+  .coluna { --Dg: 70px; }
+  .c1 { --H: 140px; } .c2 { --H: 100px; } .c3 { --H: 70px; }
+  .cubo .f { font-size: 44px; }
+  .topo-info .loja { font-size: 18px; }
+  .topo-info .preco { font-size: 13px; }
+  .vencedor-img { width: 80px; height: 64px; }
+  .podio-cena { min-height: 340px; }
+  .todas .l { grid-template-columns: 26px 1fr auto; }
+  .todas .conta { grid-column: 2 / -1; grid-row: 2; }
+  .todas a { display: none; }
+  .duelo { grid-template-columns: 1fr; }
+  .vs { text-align: center; font-size: 44px; }
+  .raiox { height: 340px; }
+  .barra .pilula span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+
+<div class="grao" aria-hidden="true"></div>
+<header class="barra">
+  <div class="wrap">
+    <a class="logo" href="#inicio"><i></i><span id="nome-site">Comparador</span></a>
+    <div class="dir">
+      <button class="pilula" id="bt-som" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path id="som-onda" d="M23 9l-6 6M17 9l6 6"/></svg><span id="som-txt">Som desligado</span></button>
+      <button class="pilula sino" id="bt-alertas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span>Alertas</span><b id="qtd">0</b></button>
+    </div>
+  </div>
+</header>
+
+<main id="app"></main>
+<div class="veu" id="veu" hidden></div>
+<aside class="gaveta" id="gaveta" hidden aria-label="Meus alertas"></aside>
+<div class="avisos" id="avisos" aria-live="polite"></div>
+<div class="cursor" id="cursor" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="config.js"></script>
+<script src="dados/ofertas-exemplo.js"></script>
+<script src="nucleo.js"></script>
+<script>
+(function () {
+  const { D, brl, brlCurto, esc, loja, produto, resumo, linkLoja, conta, regra, buscar, alertas, lerValor, dataCurta, meses, nomeCompleto, norm } = N;
+  const $app = document.getElementById("app");
+  const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fino = matchMedia("(pointer: fine)").matches;
+  const estreito = () => innerWidth < 860;
+  document.getElementById("nome-site").textContent = N.C.nomeDoSite;
+  let limpar = []; // funções para desligar efeitos da vista anterior
+  const naSaida = f => limpar.push(f);
+
+  // ---------- som (desligado por padrão) ----------
+  let somLigado = false, ctx = null;
+  function bip(freq, dur = .12, tipo = "sine", vol = .05) {
+    if (!somLigado) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = tipo; o.frequency.value = freq; g.gain.value = vol;
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + dur);
+      o.start(); o.stop(ctx.currentTime + dur);
+    } catch (e) {}
+  }
+  document.getElementById("bt-som").onclick = e => {
+    somLigado = !somLigado;
+    e.currentTarget.setAttribute("aria-pressed", somLigado);
+    document.getElementById("som-txt").textContent = somLigado ? "Som ligado" : "Som desligado";
+    document.getElementById("som-onda").setAttribute("d", somLigado ? "M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" : "M23 9l-6 6M17 9l6 6");
+    bip(660, .15);
+  };
+
+  // ---------- cursor sutil ----------
+  if (fino && !calmo) {
+    const c = document.getElementById("cursor"); c.hidden = false; c.style.opacity = 0;
+    const mx = gsap.quickTo(c, "x", { duration: .35, ease: "power3" }), my = gsap.quickTo(c, "y", { duration: .35, ease: "power3" });
+    addEventListener("pointermove", e => { if (c.style.opacity === "0") { gsap.set(c, { x: e.clientX, y: e.clientY }); c.style.opacity = 1; } mx(e.clientX); my(e.clientY); c.classList.toggle("sobre", !!e.target.closest("a, button, .item, input, .raiox, .puxador")); });
+  }
+
+  // ---------- avisos e alertas ----------
+  function aviso(t, s) { const el = document.createElement("div"); el.innerHTML = t + (s ? `<small>${s}</small>` : ""); document.getElementById("avisos").appendChild(el); setTimeout(() => el.remove(), 6000); }
+  function tocarSino() { const b = document.getElementById("bt-alertas"); b.classList.remove("toca"); void b.offsetWidth; b.classList.add("toca"); bip(880, .25, "triangle"); setTimeout(() => bip(1320, .3, "triangle"), 120); }
+  function contador() { document.getElementById("qtd").textContent = alertas.lista().length; }
+  function verificar() { alertas.novosDisparos().forEach(d => { tocarSino(); aviso(`Baixou! ${esc(nomeCompleto(d.produto))} por ${brl(d.melhor.total)}`, `na ${esc(loja(d.melhor.loja).nome)} · seu alvo era ${brl(d.alerta.alvo)}`); }); contador(); }
+  const $g = document.getElementById("gaveta"), $veu = document.getElementById("veu");
+  function gaveta() {
+    const l = alertas.lista();
+    $g.innerHTML = `<header><h2>Meus alertas</h2><button class="pilula" id="fechar-g">Fechar</button></header>
+      <p style="margin:0;color:var(--muted);font-size:14px">Ficam guardados neste navegador. Na demonstração, “Simular queda” mostra como chega o aviso.</p>
+      ${l.length ? l.map(a => { const p = produto(a.produtoId); if (!p) return ""; const m = resumo(p).melhor, ok = m.total <= a.alvo;
+        return `<div class="al ${ok ? "ok" : ""}"><img src="${p.recorte}" alt=""><div><a href="#${p.id}">${esc(nomeCompleto(p))}</a><div class="n">agora <b>${brl(m.total)}</b> · alvo <b>${brl(a.alvo)}</b></div><span class="selo ${ok ? "baixa" : "normal"}" style="margin-top:6px">${ok ? "Baixou!" : "Esperando"}</span></div>
+        <div class="bts">${alertas.simulado(p.id) ? `<button class="bt bt-linha bt-p" data-desfazer="${p.id}">Desfazer simulação</button>` : `<button class="bt bt-linha bt-p" data-simular="${p.id}">Simular queda</button>`}<button class="bt bt-linha bt-p" data-remover="${p.id}">Remover</button></div></div>`; }).join("")
+      : `<p>Nenhum alerta ainda. Abra um produto e arraste o preço-alvo no gráfico.</p>`}`;
+  }
+  const abrirGaveta = a => { $g.hidden = !a; $veu.hidden = !a; if (a) gaveta(); };
+  document.getElementById("bt-alertas").onclick = () => abrirGaveta(true);
+  $veu.onclick = () => abrirGaveta(false);
+  $g.addEventListener("click", e => {
+    const b = e.target.closest("button, a"); if (!b) return;
+    if (b.id === "fechar-g" || b.tagName === "A") abrirGaveta(false);
+    else if (b.dataset.simular) { alertas.simular(b.dataset.simular); gaveta(); verificar(); }
+    else if (b.dataset.desfazer) { alertas.desfazer(b.dataset.desfazer); gaveta(); }
+    else if (b.dataset.remover) { alertas.remover(b.dataset.remover); gaveta(); contador(); }
+  });
+
+  const contaHTML = o => esc(conta(o)).replace(/(\+ imposto [^+]+\+ ICMS [^=]+)/, '<span class="imp">$1</span>');
+  function contar(el, de, ate, dur = 1, fmt = brl) { const o = { v: de }; return gsap.to(o, { v: ate, duration: calmo ? 0 : dur, ease: "power2.out", onUpdate: () => el.textContent = fmt(o.v) }); }
+
+  // =============================================================
+  // ENTRADA: produtos flutuando em profundidade
+  // =============================================================
+  // posições (x%, y%, profundidade 0..1) — no computador deixam livre o canto da chamada
+  const vagasPC = [[64, 38, 1], [85, 60, .95], [56, 68, .9], [75, 88, .85], [93, 30, .8], [48, 18, .72], [95, 87, .7], [73, 12, .62], [31, 11, .55], [99, 58, .5], [12, 10, .45], [88, 8, .42], [52, 93, .4], [66, 58, .35]];
+  const vagasCel = [[30, 20, 1], [72, 26, .95], [50, 52, .9], [22, 64, .82], [78, 66, .8], [50, 86, .74], [16, 40, .6], [86, 46, .58], [40, 8, .55], [84, 8, .5], [14, 88, .45], [86, 90, .42], [62, 40, .38], [36, 36, .34]];
+
+  function telaInicio() {
+    $app.innerHTML = `<section class="palco" id="palco">
+        <div class="halo"></div><div class="chao"></div>
+        <div class="nuvem" id="nuvem">${D.produtos.map((p, i) => `<div class="item" data-id="${p.id}" style="z-index:${20 - i}"><div class="flutua"><img src="${p.recorte}" alt="${esc(nomeCompleto(p))}" draggable="false"><div class="etq">${esc(nomeCompleto(p))}<b class="num">${brl(resumo(p).melhor.total)}</b></div></div></div>`).join("")}</div>
+        <div class="chamada">
+          <span class="eyebrow">Eletrônicos · 10 lojas · preço final</span>
+          <h1><span class="risco">O preço da vitrine</span> mente.</h1>
+          <p>A gente mostra <b>o que chega na sua casa</b>: produto, frete, imposto e ICMS. E faz as lojas apostarem corrida.</p>
+          <label class="campo-busca"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="busca" type="search" placeholder="Digite: fone, iPhone, JBL, Kindle..." autocomplete="off" aria-label="Buscar produto"></label>
+          <span class="dica"><span>Toque</span> num produto para ver a corrida · <span>arraste um sobre o outro</span> para comparar · preços de demonstração</span>
+        </div>
+      </section>`;
+    const itens = [...document.querySelectorAll(".item")];
+    const estado = itens.map(() => ({ x: 0, y: 0, d: 0, dx: 0, dy: 0 }));
+    const vagas = () => estreito() ? vagasCel : vagasPC;
+    gsap.set(itens, { xPercent: -50, yPercent: -50 });
+
+    function posicionar(animar) {
+      const q = norm(document.getElementById("busca")?.value.trim() || "");
+      const casa = D.produtos.map(p => !q || buscar(q).includes(p));
+      const ordem = D.produtos.map((p, i) => i).sort((a, b) => (casa[b] - casa[a]) || a - b);
+      const v = vagas(), base = estreito() ? 58 : 92, ganho = estreito() ? 62 : 132;
+      ordem.forEach((idx, k) => {
+        const [x, y, d0] = v[k], el = itens[idx], ok = casa[idx];
+        const d = ok ? d0 : d0 * .5;
+        estado[idx].d = d;
+        el.classList.toggle("frente", ok && !!q);
+        el.classList.toggle("longe", d < .5);
+        el.style.zIndex = Math.round(d * 20) + (ok ? 20 : 0);
+        const alvo = { left: x + "%", top: y + "%", opacity: ok ? (.12 + d * .88) : .06, scale: ok && q ? 1.12 : 1, "--w": (base + ganho * d) + "px" };
+        if (animar && !calmo) gsap.to(el, { ...alvo, duration: .9, ease: "expo.out", delay: k * .02 }); else gsap.set(el, alvo);
+      });
+    }
+    posicionar(false);
+    if (!calmo) {
+      gsap.from(itens, { opacity: 0, y: 60, scale: .7, duration: 1.4, ease: "expo.out", stagger: .05 });
+      itens.forEach((el, i) => gsap.to(el.querySelector(".flutua"), { y: (i % 2 ? -1 : 1) * (8 + (i % 5) * 3), rotation: (i % 3 - 1) * 3, duration: 3 + (i % 4), yoyo: true, repeat: -1, ease: "sine.inOut" }));
+    }
+    document.getElementById("busca").addEventListener("input", () => { posicionar(true); bip(520 + Math.random() * 120, .05, "square", .02); });
+    document.getElementById("busca").addEventListener("keydown", e => { if (e.key === "Enter") { const r = buscar(e.target.value); if (r.length) location.hash = r[0].id; } });
+
+    // parallax com o mouse (deriva suave no celular)
+    let mx = 0, my = 0, cx = 0, cy = 0, t0 = performance.now(), raf;
+    const mover = e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; };
+    addEventListener("pointermove", mover); naSaida(() => removeEventListener("pointermove", mover));
+    function quadro(t) {
+      if (!fino) { mx = Math.sin((t - t0) / 2400) * .6; my = Math.cos((t - t0) / 3100) * .4; }
+      cx += (mx - cx) * .06; cy += (my - cy) * .06;
+      itens.forEach((el, i) => { const s = estado[i], k = 18 + s.d * 46; el.style.translate = `${-cx * k + s.dx}px ${-cy * k * .7 + s.dy}px`; });
+      raf = requestAnimationFrame(quadro);
+    }
+    if (!calmo) { raf = requestAnimationFrame(quadro); naSaida(() => cancelAnimationFrame(raf)); }
+    const redim = () => posicionar(false); addEventListener("resize", redim); naSaida(() => removeEventListener("resize", redim));
+
+    // tocar abre; arrastar um sobre o outro compara
+    itens.forEach((el, i) => {
+      el.addEventListener("pointerdown", e => {
+        e.preventDefault(); el.setPointerCapture(e.pointerId);
+        const x0 = e.clientX, y0 = e.clientY; let mexeu = false, alvo = null;
+        el.classList.add("arrastando");
+        const mv = ev => {
+          estado[i].dx = ev.clientX - x0; estado[i].dy = ev.clientY - y0;
+          if (Math.hypot(estado[i].dx, estado[i].dy) > 8) mexeu = true;
+          if (calmo) el.style.translate = `${estado[i].dx}px ${estado[i].dy}px`;
+          alvo = null;
+          itens.forEach(o => { if (o === el) return; const r = o.querySelector("img").getBoundingClientRect(); const dentro = ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom; o.classList.toggle("alvo-drop", dentro && mexeu); if (dentro && mexeu) alvo = o; });
+        };
+        const up = () => {
+          el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up);
+          el.classList.remove("arrastando"); itens.forEach(o => o.classList.remove("alvo-drop"));
+          if (!mexeu) { bip(740, .1); location.hash = el.dataset.id; return; }
+          if (alvo) { bip(500, .1); setTimeout(() => bip(750, .15), 90); location.hash = "comparar-" + el.dataset.id + "--" + alvo.dataset.id; return; }
+          gsap.to(estado[i], { dx: 0, dy: 0, duration: .7, ease: "elastic.out(1, .5)", onUpdate: () => { if (calmo) el.style.translate = `${estado[i].dx}px ${estado[i].dy}px`; } });
+        };
+        el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+      });
+    });
+  }
+
+  // =============================================================
+  // PRODUTO: herói, raio-x, corrida, pódio, histórico
+  // =============================================================
+  function telaProduto(p) {
+    const r = resumo(p), m = r.melhor, lm = loja(m.loja), alerta = alertas.de(p.id);
+    document.documentElement.style.setProperty("--glow", p.cor);
+    const vx = r.porVitrine; // o raio-x usa a loja que parece mais barata na vitrine
+    const [inteiro, cent] = brl(m.total).replace("R$", "").trim().split(",");
+    $app.innerHTML = `<div class="vista">
+      <div class="wrap"><a class="voltar" href="#inicio">← todos os produtos</a></div>
+      <section class="wrap heroi">
+        <figure class="cartao3d" id="cartao" data-marca="${esc(p.marca)}" style="margin:0"><div class="luz"></div><div class="anel"></div><div class="anel b"></div>
+          <div class="inclina" id="inclina"><img src="${p.recorte}" alt="${esc(nomeCompleto(p))}"><div class="brilho"></div></div>
+          <figcaption>Foto: ${esc(p.creditoRecorte.autor)}, ${esc(p.creditoRecorte.licenca)}, Wikimedia Commons (fundo removido)</figcaption></figure>
+        <div class="info">
+          <span class="marca-prod">${esc(p.marca)} · ${esc(p.categoria)}</span>
+          <h1>${esc(p.nome)}</h1>
+          <ul class="specs">${p.specs.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+          <div class="final-box"><small>Menor preço final na sua casa</small><strong><span class="rs">R$</span>${inteiro}<span style="font-size:.5em">,${cent}</span></strong><span class="onde">na <b>${esc(lm.nome)}</b> · chega em ${m.prazoDias} dias</span></div>
+          <div class="economia"><span class="val num" id="eco">R$ 0</span><span>é o que você economiza comprando na <b>${esc(lm.nome)}</b> em vez da <b>${esc(loja(r.maisCara.loja).nome)}</b>, a mais cara.</span></div>
+          <span class="selo ${r.selo.tipo}">${r.selo.texto}</span>
+          <div class="acoes"><a class="bt bt-acento" href="${linkLoja(m, p)}" target="_blank" rel="noopener">Comprar na ${esc(lm.nome)} ↗</a><a class="bt bt-linha" href="#corrida">Ver a corrida</a><button class="bt bt-linha" id="ir-alerta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>${alerta ? "Alerta em " + brl(alerta.alvo) : "Me avise"}</button></div>
+        </div>
+      </section>
+
+      <section class="secao"><div class="wrap">
+        <div class="secao-cab"><div><span class="n-secao">01 · RAIO-X</span><h2>Passe a lente no preço</h2><p>Esse é o preço que a ${esc(loja(vx.loja).nome)} mostra na vitrine. Arraste a lente para ver o que tem embaixo.</p></div></div>
+        <div class="raiox" id="raiox">
+          <div class="camada vitrine"><div><div class="rot">na vitrine da ${esc(loja(vx.loja).nome)}</div><div class="preco num-d"><small>R$</small>${brl(vx.preco).replace("R$", "").trim()}</div><div class="rot">parece barato, né?</div></div></div>
+          <div class="camada raio" id="raio"><div><div class="rot">o que chega na sua casa</div><div class="conta"><span>${brlCurto(vx.preco)}</span><i>+ frete</i><span>${vx.frete ? brlCurto(vx.frete) : "grátis"}</span>${vx.internacional ? `<i>+ imposto</i><span>${brlCurto(vx.ii)}</span><i>+ ICMS</i><span>${brlCurto(vx.icms)}</span>` : ""}<span class="tot">= ${brl(vx.total)}</span></div><div class="rot">${vx.internacional ? `${r.posVitrine}º lugar no preço final` : "sem imposto de importação, loja nacional"}</div></div></div>
+          <div class="lente" id="lente"></div>
+        </div>
+      </div></section>
+
+      <section class="secao" id="corrida"><div class="wrap">
+        <div class="secao-cab"><div><span class="n-secao">02 · A CORRIDA</span><h2>Quem chega primeiro na sua casa</h2><p>As lojas largam pelo preço da vitrine. Depois o frete, o imposto e o ICMS vão pesando. Barra menor é melhor.</p></div>
+          <div class="placa-fase"><span class="fase" id="fase">Pronto para largar</span><span class="etapas" id="etapas"><i></i><i></i><i></i><i></i></span><button class="bt bt-acento bt-p" id="largar">Largar</button></div></div>
+        <div class="pista"><div class="raias" id="raias" style="height:${r.lista.length * (estreito() ? 70 : 60)}px">${r.lista.map((o, i) => `<div class="raia" data-i="${i}">
+            <span class="pos">–</span>
+            <span class="nome">${esc(loja(o.loja).nome)}<small class="${o.internacional ? "imp" : ""}">${o.internacional ? "importado" : "nacional"} · ${o.prazoDias} dias</small></span>
+            <span class="trilho"><span class="barra-c"><i style="background:var(--seg-prod)"></i><i style="background:var(--seg-frete)"></i><i style="background:var(--accent)"></i><i style="background:var(--accent-2)"></i></span><span class="ficha">${loja(o.loja).sigla}</span></span>
+            <span class="val num">R$ 0</span><span class="queda"></span>
+          </div>`).join("")}</div></div>
+        <div class="legenda"><span><i style="background:var(--seg-prod)"></i>vitrine</span><span><i style="background:var(--seg-frete)"></i>frete</span><span><i style="background:var(--accent)"></i>imposto de importação</span><span><i style="background:var(--accent-2)"></i>ICMS</span></div>
+
+        <div class="podio-cena" id="podio-cena"><canvas class="confete" id="confete"></canvas><div class="podio" id="podio">${[1, 0, 2].map(k => { const o = r.lista[k]; if (!o) return ""; return `<div class="coluna" data-k="${k}">
+            <div class="topo-info">${k === 0 ? `<img class="vencedor-img" src="${p.recorte}" alt="">` : ""}<span class="loja">${esc(loja(o.loja).nome)}</span><span class="preco">${brl(o.total)}</span><a href="${linkLoja(o, p)}" target="_blank" rel="noopener">IR PARA A LOJA ↗</a></div>
+            <div class="cubo c${k + 1}"><div class="t"></div><div class="l"></div><div class="f">${k + 1}</div></div></div>`; }).join("")}</div></div>
+
+        <div class="todas">${r.lista.map((o, i) => `<div class="l"><span class="p">${i + 1}º</span><span><b>${esc(loja(o.loja).nome)}</b></span><span class="conta">${contaHTML(o)}</span><span class="t">${brl(o.total)}</span><a href="${linkLoja(o, p)}" target="_blank" rel="noopener">LOJA ↗</a></div>`).join("")}</div>
+      </div></section>
+
+      <section class="secao" id="historico"><div class="wrap">
+        <div class="secao-cab"><div><span class="n-secao">03 · LINHA DO TEMPO</span><h2>Seis meses na ${esc(lm.nome)}</h2><p>Preço final na sua casa, semana a semana. Arraste a linha laranja até o preço que você quer pagar.</p></div><span class="selo ${r.selo.tipo}">${r.selo.tipo === "alta" ? "Espere: está caro agora" : r.selo.tipo === "baixa" ? "Melhor momento: menor em 90 dias" : "Preço dentro do normal"}</span></div>
+        <div class="grafico-caixa"><div id="grafico"></div>
+          <div class="alvo-painel"><label for="alvo-range">Me avise quando chegar a</label><span class="v num" id="alvo-v"></span><input type="range" id="alvo-range"><button class="bt bt-acento" id="salvar-alerta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>${alerta ? "Atualizar alerta" : "Criar alerta"}</button>${alerta ? '<button class="bt bt-linha" id="remover-alerta">Remover</button>' : ""}</div>
+        </div>
+      </div></section>
+
+      <footer class="wrap rodape"><span>${esc(regra())}</span><span>Protótipo de estudo. Preços de demonstração. Fotos do Wikimedia Commons com licença livre, fundo removido. Marcas e lojas aparecem só como texto.</span></footer>
+    </div>`;
+
+    contar(document.getElementById("eco"), 0, r.economia, 1.6, brlCurto);
+    if (!calmo) gsap.from(".heroi .info > *", { y: 30, opacity: 0, duration: .9, ease: "expo.out", stagger: .06 });
+    if (!calmo) gsap.from("#inclina", { scale: .8, rotationY: -25, duration: 1.4, ease: "expo.out" });
+    inclinar(); raioX(); const corrida = montarCorrida(p, r); grafico(p, r);
+    document.getElementById("ir-alerta").onclick = () => document.getElementById("historico").scrollIntoView({ behavior: calmo ? "auto" : "smooth" });
+
+    // larga sozinha quando a pista aparece
+    const io = new IntersectionObserver(es => { if (es[0].isIntersecting) { corrida.largar(); io.disconnect(); } }, { threshold: .35 });
+    io.observe(document.getElementById("raias")); naSaida(() => io.disconnect());
+    document.getElementById("largar").onclick = () => corrida.largar();
+  }
+
+  // foto que inclina com o mouse (efeito cartão 3D)
+  function inclinar() {
+    const c = document.getElementById("cartao"), el = document.getElementById("inclina");
+    if (calmo) return;
+    const rx = gsap.quickTo(el, "rotationX", { duration: .6, ease: "power3" }), ry = gsap.quickTo(el, "rotationY", { duration: .6, ease: "power3" });
+    const mv = e => { const b = c.getBoundingClientRect(); const x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5; ry(x * 26); rx(-y * 20); el.style.setProperty("--bx", (x + .5) * 100 + "%"); el.style.setProperty("--by", (y + .5) * 100 + "%"); };
+    c.addEventListener("pointermove", mv); c.addEventListener("pointerleave", () => { rx(0); ry(0); });
+    if (!fino) gsap.to(el, { rotationY: 12, rotationX: -6, duration: 3, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  }
+
+  // lente do raio-x
+  function raioX() {
+    const box = document.getElementById("raiox"), alvo = [box.querySelector("#raio"), box.querySelector("#lente")];
+    const pos = { x: 18, y: 50 };
+    const aplicar = () => alvo.forEach(el => { el.style.setProperty("--x", pos.x + "%"); el.style.setProperty("--y", pos.y + "%"); });
+    const r = estreito() ? 84 : 140; alvo.forEach(el => el.style.setProperty("--r", r + "px")); aplicar();
+    let dica = calmo ? null : gsap.to(pos, { x: 70, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: 1, delay: .6, onUpdate: aplicar });
+    const mv = e => { const b = box.getBoundingClientRect(); pos.x = Math.max(0, Math.min(100, (e.clientX - b.left) / b.width * 100)); pos.y = Math.max(0, Math.min(100, (e.clientY - b.top) / b.height * 100)); aplicar(); };
+    box.addEventListener("pointerdown", e => { dica && dica.kill(); dica = null; box.setPointerCapture(e.pointerId); mv(e); bip(300, .08, "sawtooth", .02); });
+    box.addEventListener("pointermove", e => { if (fino || e.buttons) { dica && dica.kill(); dica = null; mv(e); } });
+  }
+
+  // ---------- a corrida ----------
+  function montarCorrida(p, r) {
+    const raias = [...document.querySelectorAll(".raia")], lista = r.lista;
+    const alt = () => estreito() ? 70 : 60;
+    const fases = [
+      { nome: "Largada: <b>preço da vitrine</b>", v: o => o.preco, seg: o => [o.preco, 0, 0, 0] },
+      { nome: "+ <b>frete</b>", v: o => o.preco + o.frete, seg: o => [o.preco, o.frete, 0, 0] },
+      { nome: "+ <b>imposto de importação</b>", v: o => o.preco + o.frete + o.ii, seg: o => [o.preco, o.frete, o.ii, 0] },
+      { nome: "+ <b>ICMS</b>", v: o => o.total, seg: o => [o.preco, o.frete, o.ii, o.icms] }
+    ];
+    const maxV = Math.max(...lista.map(o => o.total)) * 1.04;
+    let tl = null, rodando = false;
+    const ranking = f => lista.map((o, i) => i).sort((a, b) => fases[f].v(lista[a]) - fases[f].v(lista[b]) || a - b);
+    if (!calmo) gsap.set(".coluna", { opacity: 0 }); else estadoFinal();
+
+    function estadoFinal() {
+      const ord = ranking(3);
+      ord.forEach((idx, pos) => { const el = raias[idx], o = lista[idx]; el.style.top = pos * alt() + "px"; el.className = "raia" + (pos < 3 ? " p" + (pos + 1) : ""); el.querySelector(".pos").textContent = pos + 1; el.querySelector(".val").textContent = brl(o.total); fases[3].seg(o).forEach((s, k) => el.querySelectorAll(".barra-c i")[k].style.width = s / maxV * 100 + "%"); el.querySelector(".ficha").style.left = o.total / maxV * 100 + "%"; });
+      document.querySelectorAll("#etapas i").forEach(i => i.classList.add("on"));
+      document.getElementById("fase").innerHTML = "Chegada: <b>preço final</b>";
+    }
+
+    function largar() {
+      if (rodando) return; rodando = true;
+      document.getElementById("largar").textContent = "Ver de novo";
+      gsap.set(".coluna", { opacity: 0 });
+      if (calmo) { estadoFinal(); mostrarPodio(); rodando = false; return; }
+      tl && tl.kill();
+      const posInicial = ranking(0);
+      raias.forEach((el, i) => { el.style.top = i * alt() + "px"; el.className = "raia"; el.querySelector(".pos").textContent = "–"; el.querySelector(".val").textContent = "R$ 0"; el.querySelectorAll(".barra-c i").forEach(b => b.style.width = "0%"); el.querySelector(".ficha").style.left = "0%"; el.querySelector(".queda").style.opacity = 0; });
+      document.querySelectorAll("#etapas i").forEach(i => i.classList.remove("on"));
+      tl = gsap.timeline({ onComplete: () => { rodando = false; document.getElementById("fase").innerHTML = "Chegada: <b>preço final</b>"; mostrarPodio(); } });
+      fases.forEach((f, fi) => {
+        tl.call(() => { document.getElementById("fase").innerHTML = f.nome; document.querySelectorAll("#etapas i")[fi].classList.add("on"); bip(400 + fi * 140, .14, "square", .03); }, null, fi === 0 ? 0 : "+=.35");
+        const inicio = tl.duration();
+        lista.forEach((o, i) => {
+          const el = raias[i], segs = f.seg(o), barras = el.querySelectorAll(".barra-c i");
+          segs.forEach((s, k) => tl.to(barras[k], { width: s / maxV * 100 + "%", duration: fi === 0 ? 1.3 : .9, ease: fi === 0 ? "power3.out" : "power2.inOut" }, inicio + (fi === 0 ? i * .05 : 0)));
+          tl.to(el.querySelector(".ficha"), { left: f.v(o) / maxV * 100 + "%", duration: fi === 0 ? 1.3 : .9, ease: fi === 0 ? "power3.out" : "power2.inOut" }, inicio + (fi === 0 ? i * .05 : 0));
+          const val = el.querySelector(".val"), de = fi === 0 ? 0 : fases[fi - 1].v(o), obj = { v: de };
+          tl.to(obj, { v: f.v(o), duration: fi === 0 ? 1.3 : .9, ease: "power2.out", onUpdate: () => val.textContent = brl(obj.v) }, inicio);
+        });
+        // reordena as raias (quem ficou mais caro cai)
+        const ord = ranking(fi);
+        ord.forEach((idx, pos) => {
+          const el = raias[idx];
+          tl.to(el, { top: pos * alt(), duration: .7, ease: "power3.inOut" }, inicio + (fi === 0 ? 1.1 : .95));
+          tl.call(() => {
+            el.className = "raia" + (pos < 3 ? " p" + (pos + 1) : ""); el.querySelector(".pos").textContent = pos + 1;
+            const perdeu = pos - posInicial.indexOf(idx), q = el.querySelector(".queda");
+            if (fi > 0 && perdeu > 0) { q.textContent = `▼ caiu ${perdeu}`; gsap.to(q, { opacity: 1, duration: .3 }); } else if (fi > 0) gsap.to(q, { opacity: 0, duration: .3 });
+          }, null, inicio + (fi === 0 ? 1.1 : .95));
+        });
+      });
+    }
+
+    function mostrarPodio() {
+      const cols = document.querySelectorAll(".coluna");
+      gsap.set(cols, { opacity: 1 });
+      if (calmo) return;
+      const ordem = [...cols].sort((a, b) => b.dataset.k - a.dataset.k); // 3º, 2º, 1º
+      const t = gsap.timeline();
+      ordem.forEach((c, i) => {
+        t.from(c.querySelector(".cubo"), { scaleY: 0, duration: .8, ease: "back.out(1.6)" }, i * .35)
+         .from(c.querySelector(".topo-info"), { y: 30, opacity: 0, duration: .5, ease: "power3.out" }, i * .35 + .4)
+         .call(() => bip([523, 659, 784][i], .25, "triangle"), null, i * .35 + .2);
+      });
+      t.call(confete, null, 1.3);
+    }
+    return { largar };
+  }
+
+  // confete leve (no máximo 110 pedaços, some em 3 s)
+  function confete() {
+    const cv = document.getElementById("confete"); if (!cv || calmo) return;
+    const b = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = b.width * dpr; cv.height = b.height * dpr;
+    const g = cv.getContext("2d"); g.scale(dpr, dpr);
+    const cores = ["#ff5b1f", "#f1cd78", "#f3f1ec", "#ffa071"];
+    const ps = Array.from({ length: 110 }, () => ({ x: b.width / 2 + (Math.random() - .5) * 60, y: b.height * .45, vx: (Math.random() - .5) * 9, vy: -Math.random() * 11 - 4, r: Math.random() * 6 + 3, a: Math.random() * 6, va: (Math.random() - .5) * .3, c: cores[Math.random() * 4 | 0] }));
+    const t0 = performance.now(); bip(1046, .4, "triangle");
+    (function anima(t) {
+      const dt = t - t0; g.clearRect(0, 0, b.width, b.height);
+      ps.forEach(p => { p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += p.va; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.globalAlpha = Math.max(0, 1 - dt / 3000); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); g.restore(); });
+      if (dt < 3000) requestAnimationFrame(anima); else g.clearRect(0, 0, b.width, b.height);
+    })(t0);
+  }
+
+  // ---------- linha do tempo com preço-alvo arrastável ----------
+  function grafico(p, r) {
+    const m = r.melhor, alerta = alertas.de(p.id);
+    const pontos = m.historico.map(h => ({ data: h.data, v: N.contaPara(m, h.preco).total }));
+    pontos[pontos.length - 1].v = m.total;
+    const n = pontos.length, vals = pontos.map(x => x.v);
+    let min = Math.min(...vals), max = Math.max(...vals);
+    const pad = (max - min) * .25 || max * .08; min = Math.max(0, min - pad); max = max + pad * .5;
+    const W = estreito() ? 520 : 1100, H = estreito() ? 300 : 300, pl = 66, pr = 22, pt = 24, pb = 30;
+    const x = i => pl + i / (n - 1) * (W - pl - pr), y = v => pt + (1 - (v - min) / (max - min)) * (H - pt - pb), yInv = py => min + (1 - (py - pt) / (H - pt - pb)) * (max - min);
+    const caminho = pontos.map((q, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(q.v).toFixed(1)}`).join("");
+    let mi = 0; pontos.forEach((q, i) => { if (q.v < pontos[mi].v) mi = i; });
+    let eixo = "", ult = -1; pontos.forEach((q, i) => { const k = +q.data.slice(5, 7) - 1; if (k !== ult && i) eixo += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${meses[k]}</text>`; ult = k; });
+    const ticks = [0, .5, 1].map(t => { const v = min + pad * .6 + t * (max - min - pad); return `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,.06)"/><text x="${pl - 10}" y="${y(v) + 4}" text-anchor="end">${brlCurto(v)}</text>`; }).join("");
+    const passo = max > 2000 ? 10 : 1;
+    let alvo = alerta ? alerta.alvo : Math.round(m.total * .9 / passo) * passo;
+    document.getElementById("grafico").innerHTML = `<svg class="grafico" id="svg-g" viewBox="0 0 ${W} ${H}" role="img" aria-label="Preço final nos últimos 6 meses">
+      <defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${p.cor}" stop-opacity=".28"/><stop offset="1" stop-color="${p.cor}" stop-opacity="0"/></linearGradient></defs>
+      ${ticks}${eixo}
+      <path d="${caminho}L${x(n - 1)},${H - pb}L${x(0)},${H - pb}Z" fill="url(#ga)" id="g-area"/>
+      <path d="${caminho}" class="linha" id="g-linha" style="stroke:${p.cor}"/>
+      <circle cx="${x(mi)}" cy="${y(pontos[mi].v)}" r="6" fill="#74eeb0" class="pulsa"/><circle cx="${x(mi)}" cy="${y(pontos[mi].v)}" r="5" fill="#74eeb0"/>
+      <text x="${Math.min(Math.max(x(mi), pl + 90), W - pr - 90)}" y="${Math.min(y(pontos[mi].v) + 24, H - pb - 6)}" text-anchor="middle" style="fill:#74eeb0;paint-order:stroke;stroke:#101016;stroke-width:4px">melhor momento · ${brl(pontos[mi].v)}</text>
+      <circle cx="${x(n - 1)}" cy="${y(m.total)}" r="6" fill="#101016" stroke="#f3f1ec" stroke-width="2"/>
+      <g id="g-alvo"><line class="alvo-l" x1="${pl}" x2="${W - pr}" y1="0" y2="0"/><rect x="${pl}" y="-14" width="${W - pl - pr}" height="28" fill="transparent" class="puxador"/><g class="puxador"><rect x="${W - pr - 112}" y="-14" width="112" height="28" rx="14" fill="#ff5b1f"/><text x="${W - pr - 56}" y="5" text-anchor="middle" style="fill:#140600;font-weight:600" id="g-alvo-t"></text></g></g>
+    </svg>`;
+    const range = document.getElementById("alvo-range");
+    range.min = Math.ceil(min / passo) * passo; range.max = Math.floor(max / passo) * passo; range.step = passo;
+    function aplicar(v) {
+      alvo = Math.max(+range.min, Math.min(+range.max, Math.round(v / passo) * passo));
+      document.getElementById("g-alvo").setAttribute("transform", `translate(0 ${y(alvo)})`);
+      document.getElementById("g-alvo-t").textContent = brlCurto(alvo);
+      document.getElementById("alvo-v").textContent = brl(alvo); range.value = alvo;
+    }
+    aplicar(alvo);
+    range.oninput = () => aplicar(+range.value);
+    const svg = document.getElementById("svg-g"); let pegando = false;
+    const py = e => { const b = svg.getBoundingClientRect(); return (e.clientY - b.top) * (H / b.height); };
+    svg.addEventListener("pointerdown", e => { if (!e.target.closest(".puxador")) return; pegando = true; svg.setPointerCapture(e.pointerId); });
+    svg.addEventListener("pointermove", e => { if (pegando) aplicar(yInv(py(e))); });
+    svg.addEventListener("pointerup", () => pegando = false);
+    // linha desenha ao aparecer
+    const linha = document.getElementById("g-linha"), L = linha.getTotalLength();
+    if (!calmo) {
+      linha.style.strokeDasharray = L; linha.style.strokeDashoffset = L;
+      const io = new IntersectionObserver(es => { if (es[0].isIntersecting) { gsap.to(linha, { strokeDashoffset: 0, duration: 2, ease: "power2.inOut" }); gsap.from("#g-area", { opacity: 0, duration: 1.4, delay: .8 }); io.disconnect(); } }, { threshold: .3 });
+      io.observe(svg); naSaida(() => io.disconnect());
+    }
+    document.getElementById("salvar-alerta").onclick = () => { alertas.salvar(p.id, alvo); tocarSino(); aviso("Alerta criado", `Avisamos aqui quando o preço final chegar a ${brl(alvo)}.`); contador(); };
+    const rem = document.getElementById("remover-alerta"); if (rem) rem.onclick = () => { alertas.remover(p.id); aviso("Alerta removido"); render(); };
+  }
+
+  // =============================================================
+  // COMPARAR (arrastou um produto sobre o outro)
+  // =============================================================
+  function telaComparar(a, b) {
+    const ra = resumo(a), rb = resumo(b), ganha = ra.melhor.total <= rb.melhor.total ? a : b, perde = ganha === a ? b : a;
+    const dif = Math.abs(ra.melhor.total - rb.melhor.total);
+    document.documentElement.style.setProperty("--glow", ganha.cor);
+    const lado = (p, r) => `<div class="lado ${p === ganha ? "ganha" : ""}"><img src="${p.recorte}" alt="">
+      <span class="marca-prod">${esc(p.marca)}</span><h3>${esc(p.nome)}</h3><span class="p num">${brlCurto(r.melhor.total)}</span>
+      <span class="m">menor final na ${esc(loja(r.melhor.loja).nome)} · ${r.melhor.prazoDias} dias · ${r.lista.length} lojas</span><span class="selo ${r.selo.tipo}">${r.selo.texto}</span>
+      <a class="bt bt-linha bt-p" href="#${p.id}">Ver a corrida</a></div>`;
+    $app.innerHTML = `<div class="vista"><div class="wrap"><a class="voltar" href="#inicio">← todos os produtos</a>
+      <div class="secao-cab" style="margin-top:18px"><div><span class="n-secao">FRENTE A FRENTE</span><h2>Lado a lado</h2></div></div>
+      <div class="duelo">${lado(a, ra)}<span class="vs">VS</span>${lado(b, rb)}</div>
+      <p class="veredito">O <b>${esc(nomeCompleto(ganha))}</b> sai <b>${brl(dif)}</b> mais barato que o ${esc(nomeCompleto(perde))}, já com frete e impostos.</p>
+      </div><footer class="wrap rodape" style="margin-top:60px"><span>Protótipo de estudo. Preços de demonstração.</span></footer></div>`;
+    if (!calmo) { gsap.from(".lado", { y: 50, opacity: 0, duration: .9, ease: "expo.out", stagger: .12 }); gsap.from(".vs", { scale: 0, rotation: -20, duration: .7, ease: "back.out(2)", delay: .3 }); }
+  }
+
+  // =============================================================
+  // NAVEGAÇÃO com transição
+  // =============================================================
+  function render() {
+    limpar.forEach(f => f()); limpar = [];
+    gsap.killTweensOf("*");
+    const h = location.hash.slice(1);
+    const cmp = h.match(/^comparar-(.+)--(.+)$/);
+    if (cmp && produto(cmp[1]) && produto(cmp[2])) telaComparar(produto(cmp[1]), produto(cmp[2]));
+    else if (produto(h)) telaProduto(produto(h));
+    else telaInicio();
+    if (!calmo) gsap.fromTo($app, { y: 24 }, { y: 0, duration: .6, ease: "expo.out" });
+    verificar();
+  }
+  const barra = document.querySelector(".barra");
+  addEventListener("scroll", () => barra.classList.toggle("rolou", scrollY > 40), { passive: true });
+  let ultimo = location.hash;
+  addEventListener("hashchange", () => {
+    const h = location.hash.slice(1);
+    if (h === "corrida" || h === "historico") { history.replaceState(null, "", ultimo || "#"); document.getElementById(h)?.scrollIntoView({ behavior: calmo ? "auto" : "smooth" }); return; }
+    ultimo = location.hash; scrollTo(0, 0); render();
+  });
+  render();
+})();
+</script>
