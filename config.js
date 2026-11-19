@@ -6,7 +6,7 @@
 
 window.CONFIG = {
   // Nome provisório. Troque aqui e ele muda no site inteiro.
-  nomeDoSite: "Comparador",
+  nomeDoSite: "AchaAI",
 
   // Cotação usada para converter o preço em reais para dólar,
   // porque as faixas do imposto de importação são em dólar.

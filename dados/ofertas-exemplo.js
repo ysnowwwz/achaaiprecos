@@ -53,9 +53,10 @@ window.DADOS = (function () {
     "iphone-15": credito("ThePhotoGraphIc", "CC BY-SA 4.0"),
     "apple-watch-se": credito("Dnkography", "CC BY-SA 4.0")
   };
+  const raiz = window.RAIZ || ""; // páginas em subpastas (versoes/) definem RAIZ = "../"
   produtos.forEach(p => {
-    p.foto = "assets/fotos/" + p.id + ".jpg";
-    p.recorte = "assets/recortes/" + p.id + ".webp";
+    p.foto = raiz + "assets/fotos/" + p.id + ".jpg";
+    p.recorte = raiz + "assets/recortes/" + p.id + ".webp";
     p.creditoRecorte = creditoRecorte[p.id] || p.credito;
   });
 

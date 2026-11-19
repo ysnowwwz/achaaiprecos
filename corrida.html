@@ -1,4 +1,5 @@
-<title>A Corrida do Preço</title>
+<title>AchaAI</title>
+<link rel="icon" type="image/svg+xml" href="assets/marca/favicon.svg">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,7 +43,14 @@ button, input { font: inherit; color: inherit; }
 .barra.rolou { background: rgba(7,7,10,.82); backdrop-filter: blur(14px); border-bottom-color: var(--line); }
 .barra .wrap { display: flex; align-items: center; gap: 10px; padding-block: 14px; }
 .logo { font: 900 22px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 10px; }
-.logo i { width: 18px; height: 10px; background: var(--accent); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.logo { font-size: 26px; letter-spacing: .03em; text-transform: none; }
+.logo em { font-style: normal; color: var(--accent); }
+.marca-svg { flex: none; border-radius: 8px; }
+/* faixa de demonstração: sempre visível */
+.faixa-demo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; background: #1a0d06; border-top: 1px solid rgba(255,91,31,.45); color: #ffc7ad; font: 500 12.5px/1.35 var(--body); text-align: center; padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.faixa-demo b { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 11.5px; margin-right: 6px; }
+body { padding-bottom: 46px; }
+.demo-perto { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); border: 1px solid rgba(255,91,31,.4); border-radius: 6px; padding: 3px 7px; width: fit-content; margin-top: 6px; }
 .barra .dir { margin-left: auto; display: flex; gap: 8px; }
 .pilula { background: rgba(16,16,22,.72); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 99px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; text-decoration: none; }
 .pilula:hover { border-color: rgba(255,255,255,.25); }
@@ -237,7 +245,7 @@ button, input { font: inherit; color: inherit; }
 .al .n b { color: var(--fg); }
 .al .bts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .veu { position: fixed; inset: 0; z-index: 69; background: rgba(0,0,0,.55); }
-.avisos { position: fixed; z-index: 80; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; width: min(440px, calc(100vw - 32px)); }
+.avisos { position: fixed; z-index: 80; left: 50%; transform: translateX(-50%); bottom: calc(64px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; width: min(440px, calc(100vw - 32px)); }
 .avisos div { background: var(--fg); color: var(--bg); border-radius: 16px; padding: 12px 16px; font-weight: 600; box-shadow: 0 20px 50px rgba(0,0,0,.5); animation: sobe .35s cubic-bezier(.2,.8,.3,1); }
 .avisos small { display: block; font-weight: 400; opacity: .75; }
 @keyframes sobe { from { transform: translateY(16px); } }
@@ -282,7 +290,7 @@ button, input { font: inherit; color: inherit; }
 <div class="grao" aria-hidden="true"></div>
 <header class="barra">
   <div class="wrap">
-    <a class="logo" href="#inicio"><i></i><span id="nome-site">Comparador</span></a>
+    <a class="logo" href="#inicio" aria-label="AchaAI, início"><svg class="marca-svg" width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#ff5b1f"/><circle cx="27" cy="27" r="14" fill="none" stroke="#07070a" stroke-width="6"/><path d="M37.5 37.5 49 49" stroke="#07070a" stroke-width="7" stroke-linecap="round"/><path d="M21 24.5l6 6 6-6" fill="none" stroke="#07070a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nome-site">Acha<em>AI</em></span></a>
     <div class="dir">
       <button class="pilula" id="bt-som" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path id="som-onda" d="M23 9l-6 6M17 9l6 6"/></svg><span id="som-txt">Som desligado</span></button>
       <button class="pilula sino" id="bt-alertas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span>Alertas</span><b id="qtd">0</b></button>
@@ -291,6 +299,7 @@ button, input { font: inherit; color: inherit; }
 </header>
 
 <main id="app"></main>
+<div class="faixa-demo" role="note"><b>Demonstração</b>Preços inventados · projeto de estudo. Nenhuma loja foi consultada e o AchaAI não tem ligação com as lojas citadas.</div>
 <div class="veu" id="veu" hidden></div>
 <aside class="gaveta" id="gaveta" hidden aria-label="Meus alertas"></aside>
 <div class="avisos" id="avisos" aria-live="polite"></div>
@@ -307,7 +316,6 @@ button, input { font: inherit; color: inherit; }
   const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fino = matchMedia("(pointer: fine)").matches;
   const estreito = () => innerWidth < 860;
-  document.getElementById("nome-site").textContent = N.C.nomeDoSite;
   let limpar = []; // funções para desligar efeitos da vista anterior
   const naSaida = f => limpar.push(f);
 
@@ -472,10 +480,10 @@ button, input { font: inherit; color: inherit; }
           <span class="marca-prod">${esc(p.marca)} · ${esc(p.categoria)}</span>
           <h1>${esc(p.nome)}</h1>
           <ul class="specs">${p.specs.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
-          <div class="final-box"><small>Menor preço final na sua casa</small><strong><span class="rs">R$</span>${inteiro}<span style="font-size:.5em">,${cent}</span></strong><span class="onde">na <b>${esc(lm.nome)}</b> · chega em ${m.prazoDias} dias</span></div>
+          <div class="final-box"><small>Menor preço final na sua casa</small><strong><span class="rs">R$</span>${inteiro}<span style="font-size:.5em">,${cent}</span></strong><span class="onde">na <b>${esc(lm.nome)}</b> · chega em ${m.prazoDias} dias</span><span class="demo-perto">Preço de demonstração · projeto de estudo</span></div>
           <div class="economia"><span class="val num" id="eco">R$ 0</span><span>é o que você economiza comprando na <b>${esc(lm.nome)}</b> em vez da <b>${esc(loja(r.maisCara.loja).nome)}</b>, a mais cara.</span></div>
           <span class="selo ${r.selo.tipo}">${r.selo.texto}</span>
-          <div class="acoes"><a class="bt bt-acento" href="${linkLoja(m, p)}" target="_blank" rel="noopener">Comprar na ${esc(lm.nome)} ↗</a><a class="bt bt-linha" href="#corrida">Ver a corrida</a><button class="bt bt-linha" id="ir-alerta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>${alerta ? "Alerta em " + brl(alerta.alvo) : "Me avise"}</button></div>
+          <div class="acoes"><a class="bt bt-acento" href="${linkLoja(m, p)}" target="_blank" rel="noopener" title="Abre a busca deste produto no site da loja (sem link de afiliado)">Buscar na ${esc(lm.nome)} ↗</a><a class="bt bt-linha" href="#corrida">Ver a corrida</a><button class="bt bt-linha" id="ir-alerta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>${alerta ? "Alerta em " + brl(alerta.alvo) : "Me avise"}</button></div>
         </div>
       </section>
 
@@ -500,10 +508,11 @@ button, input { font: inherit; color: inherit; }
         <div class="legenda"><span><i style="background:var(--seg-prod)"></i>vitrine</span><span><i style="background:var(--seg-frete)"></i>frete</span><span><i style="background:var(--accent)"></i>imposto de importação</span><span><i style="background:var(--accent-2)"></i>ICMS</span></div>
 
         <div class="podio-cena" id="podio-cena"><canvas class="confete" id="confete"></canvas><div class="podio" id="podio">${[1, 0, 2].map(k => { const o = r.lista[k]; if (!o) return ""; return `<div class="coluna" data-k="${k}">
-            <div class="topo-info">${k === 0 ? `<img class="vencedor-img" src="${p.recorte}" alt="">` : ""}<span class="loja">${esc(loja(o.loja).nome)}</span><span class="preco">${brl(o.total)}</span><a href="${linkLoja(o, p)}" target="_blank" rel="noopener">IR PARA A LOJA ↗</a></div>
+            <div class="topo-info">${k === 0 ? `<img class="vencedor-img" src="${p.recorte}" alt="">` : ""}<span class="loja">${esc(loja(o.loja).nome)}</span><span class="preco">${brl(o.total)}</span><a href="${linkLoja(o, p)}" target="_blank" rel="noopener">BUSCAR NA LOJA ↗</a></div>
             <div class="cubo c${k + 1}"><div class="t"></div><div class="l"></div><div class="f">${k + 1}</div></div></div>`; }).join("")}</div></div>
 
-        <div class="todas">${r.lista.map((o, i) => `<div class="l"><span class="p">${i + 1}º</span><span><b>${esc(loja(o.loja).nome)}</b></span><span class="conta">${contaHTML(o)}</span><span class="t">${brl(o.total)}</span><a href="${linkLoja(o, p)}" target="_blank" rel="noopener">LOJA ↗</a></div>`).join("")}</div>
+        <div class="todas">${r.lista.map((o, i) => `<div class="l"><span class="p">${i + 1}º</span><span><b>${esc(loja(o.loja).nome)}</b></span><span class="conta">${contaHTML(o)}</span><span class="t">${brl(o.total)}</span><a href="${linkLoja(o, p)}" target="_blank" rel="noopener">BUSCAR ↗</a></div>`).join("")}</div>
+        <p style="margin:14px 0 0;font-size:13px;color:var(--muted)">Os preços desta página são inventados para demonstração. Os botões abrem a busca do produto no site da loja, sem link de afiliado.</p>
       </div></section>
 
       <section class="secao" id="historico"><div class="wrap">

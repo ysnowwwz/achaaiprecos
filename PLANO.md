@@ -1,4 +1,4 @@
-# Plano do futuro: ligar o Comparador nos preços reais
+# Plano do futuro: ligar o AchaAI nos preços reais
 
 Hoje o protótipo usa **preços inventados** (arquivo `dados/ofertas-exemplo.js`).
 As telas já esperam os dados no formato que as lojas entregam, então trocar
