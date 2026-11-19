@@ -46,7 +46,18 @@ window.DADOS = (function () {
     { id: "logitech-mx-master",   nome: "MX Master",                  marca: "Logitech", categoria: "Periféricos",  cor: "#9a8fb0", termoBusca: "logitech mx master",       specs: ["Sem fio + Bluetooth", "Roda rápida", "Até 3 aparelhos"], credito: credito("Jacek Halicki", "CC BY-SA 4.0"), perfilHistorico: "baixa" },
     { id: "kindle-paperwhite",    nome: "Kindle Paperwhite",          marca: "Amazon",   categoria: "Leitores",     cor: "#c9ccd2", termoBusca: "kindle paperwhite",        specs: ["Tela 6,8\" sem reflexo", "Luz ajustável", "À prova d'água"], credito: credito("Jacek Halicki", "CC BY-SA 4.0"), perfilHistorico: "normal" }
   ];
-  produtos.forEach(p => { p.foto = "assets/fotos/" + p.id + ".jpg"; });
+  // foto = foto original (v2); recorte = mesma peça sem fundo, em WebP transparente (v3).
+  // Na v3 três recortes vêm de fotos diferentes e mais limpas (crédito trocado abaixo).
+  const creditoRecorte = {
+    "airpods-pro-2": credito("aconcagua", "CC BY-SA 4.0"),
+    "iphone-15": credito("ThePhotoGraphIc", "CC BY-SA 4.0"),
+    "apple-watch-se": credito("Dnkography", "CC BY-SA 4.0")
+  };
+  produtos.forEach(p => {
+    p.foto = "assets/fotos/" + p.id + ".jpg";
+    p.recorte = "assets/recortes/" + p.id + ".webp";
+    p.creditoRecorte = creditoRecorte[p.id] || p.credito;
+  });
 
   const hoje = "2026-11-18";
   // o(produto, loja, preço, frete, prazo, internacional, remessaConforme)

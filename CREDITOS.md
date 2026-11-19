@@ -26,5 +26,23 @@ Nas licenças CC BY-SA, quem modificar a foto precisa manter a mesma licença.
 | logitech-mx-master.jpg | Logitech MX Master | Jacek Halicki | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:2017_Mysz_komputerowa_Logitech_MX_Master.jpg |
 | kindle-paperwhite.jpg | Kindle Paperwhite | Jacek Halicki | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:2023_Amazon_Kindle_Paperwhite_(1).jpg |
 
+## Recortes sem fundo (versão 3, "A Corrida do Preço")
+
+Pasta `assets/recortes/`: as mesmas fotos acima com o fundo removido no próprio PC
+(programa rembg, modelo isnet-general-use), cortadas e salvas em WebP transparente
+(menos de 120 KB cada). Recortar é uma modificação: nas fotos CC BY-SA o recorte
+segue com a mesma licença CC BY-SA. Três recortes vieram de fotos diferentes,
+mais limpas:
+
+| Arquivo | Produto | Autor | Licença | Página original |
+|---|---|---|---|---|
+| airpods-pro-2.webp | AirPods Pro (close dos fones) | aconcagua | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:AirPods_Pro_1.jpg |
+| iphone-15.webp | iPhone 15 (costas) | ThePhotoGraphIc | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Back_of_iPhone_15.jpg |
+| apple-watch-se.webp | Apple Watch (foto do Series 4 Nike, mesmo desenho do SE) | Dnkography | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:AppleWatch_Series_4_Nike_40mm.jpg |
+
+Os outros 11 recortes saem das fotos da tabela de cima. Unsplash e Pexels foram
+considerados, mas a busca deles exige chave de API; o Commons teve opções boas
+para todos os produtos.
+
 Os nomes das marcas aparecem só como nome do produto. O site é um protótipo de
 estudo, sem ligação com as marcas ou lojas citadas.
