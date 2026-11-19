@@ -32,9 +32,8 @@ window.N = (function () {
   const simulados = () => ler("comparador.simulacao", {}, true); // { produtoId: fator }
 
   // ---------- a conta do preço final ----------
-  function calcular(of) {
-    const fator = simulados()[of.produtoId] || 1;
-    const preco = Math.round(of.preco * fator * 100) / 100;
+  // contaPara: a conta para um preço de vitrine qualquer (usada também no histórico).
+  function contaPara(of, preco) {
     const base = preco + of.frete;
     let ii = 0, icms = 0;
     if (of.internacional) {
@@ -47,6 +46,12 @@ window.N = (function () {
       icms = (base + ii) / (1 - T.icms) - (base + ii); // ICMS "por dentro"
     }
     ii = Math.round(ii * 100) / 100; icms = Math.round(icms * 100) / 100;
+    return { base, ii, icms, total: Math.round((base + ii + icms) * 100) / 100 };
+  }
+  function calcular(of) {
+    const fator = simulados()[of.produtoId] || 1;
+    const preco = Math.round(of.preco * fator * 100) / 100;
+    const { base, ii, icms } = contaPara(of, preco);
     const historico = fator === 1 ? of.historico : [...of.historico.slice(0, -1), { ...of.historico[of.historico.length - 1], preco }];
     return { ...of, preco, base, ii, icms, impostos: ii + icms, total: Math.round((base + ii + icms) * 100) / 100, historico };
   }
@@ -146,6 +151,6 @@ window.N = (function () {
 
   return {
     C, D, T, brl, brlCurto, norm, esc, loja, produto, categorias, dataBR, dataCurta, meses, nomeCompleto,
-    calcular, ofertasDe, selo, variacao, melhorMomento, resumo, linkLoja, conta, regra, credito, buscar, alertas, lerValor
+    contaPara, calcular, ofertasDe, selo, variacao, melhorMomento, resumo, linkLoja, conta, regra, credito, buscar, alertas, lerValor
   };
 })();
