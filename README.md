@@ -8,7 +8,17 @@ imposto de importação + ICMS, com a conta aberta.
 Projeto de estudo e portfólio. Os 14 produtos são reais (AirPods, iPhone 15,
 Galaxy S24 Ultra, JBL, Kindle...), mas **todos os preços são de demonstração**.
 
-## Três layouts (versão 2)
+## Versão 3: A Corrida do Preço (`corrida.html`)
+
+A versão escolhida. Produtos recortados flutuam em profundidade e se reorganizam
+enquanto você digita. Ao abrir um produto, as lojas largam pelo preço da vitrine
+e o frete, o imposto e o ICMS vão pesando ao vivo até o pódio 3D com confete.
+Tem raio-X do preço (lente arrastável), foto que inclina com o mouse, linha do
+tempo com preço-alvo arrastável, comparação arrastando um produto sobre o outro,
+cursor sutil e sons opcionais (desligados). Usa GSAP pelo cdnjs. Respeita
+"reduzir movimento". GIF da corrida em `midia/corrida.gif`.
+
+## Três layouts (versão 2, guardados)
 
 - `podio.html` — **A · Pódio**: página de lançamento, foto enorme com o brilho
   da cor do produto e as 3 lojas mais baratas num pódio.
