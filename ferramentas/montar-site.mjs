@@ -20,6 +20,8 @@ function documento(conteudo, raiz) {
 
 // v3 na página inicial
 await writeFile(`${DOCS}/index.html`, documento(await readFile("corrida.html", "utf8"), ""));
+// tela do agente (v7): aberta pelo botão da entrada ou ao tocar num produto
+await writeFile(`${DOCS}/agente.html`, documento(await readFile("agente.html", "utf8"), ""));
 // v2 guardadas em /versoes/
 for (const nome of ["podio", "placar", "feed"]) {
   const html = await readFile(`${nome}.html`, "utf8");

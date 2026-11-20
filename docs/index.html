@@ -91,7 +91,14 @@ body { padding-bottom: 46px; }
 .campo-busca input { width: 100%; background: rgba(17,26,46,.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; padding: 18px 20px 18px 52px; font-size: 18px; outline: none; transition: border-color .2s, box-shadow .2s; }
 .campo-busca input:focus { border-color: var(--accent); box-shadow: 0 0 0 6px rgba(62,230,176,.14); }
 .campo-busca svg { z-index: 1; position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--muted); }
-.dica { font: 12px var(--mono); color: var(--muted); }
+.dica { font: 14px var(--mono); color: var(--muted); }
+.bt-agente { position: relative; display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--fg); padding: 14px 18px 14px 14px; border-radius: 18px; background: rgba(17,26,46,.85); backdrop-filter: blur(12px); border: 1px solid rgba(62,230,176,.45); box-shadow: 0 0 0 6px rgba(62,230,176,.08), 0 18px 50px -20px rgba(62,230,176,.55); transition: transform .25s, box-shadow .25s; width: fit-content; max-width: 100%; }
+.bt-agente:hover { transform: translateY(-2px); box-shadow: 0 0 0 8px rgba(62,230,176,.14), 0 22px 60px -18px rgba(62,230,176,.7); }
+.bt-agente:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.bt-agente-ic { flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--accent); color: var(--on-accent, #032419); }
+.bt-agente b { display: block; font: 700 19px var(--body); }
+.bt-agente small { display: block; font: 500 14px var(--body); color: var(--muted); }
+.bt-agente .seta { flex: none; color: var(--accent); margin-left: 6px; }
 .dica span { color: var(--fg); }
 
 /* ================= PRODUTO ================= */
@@ -388,16 +395,18 @@ body { padding-bottom: 46px; }
   const vagasPC = [[64, 38, 1], [85, 60, .95], [56, 68, .9], [75, 88, .85], [93, 30, .8], [48, 18, .72], [95, 87, .7], [73, 12, .62], [31, 11, .55], [99, 58, .5], [12, 10, .45], [88, 8, .42], [52, 93, .4], [66, 58, .35]];
   const vagasCel = [[30, 20, 1], [72, 26, .95], [50, 52, .9], [22, 64, .82], [78, 66, .8], [50, 86, .74], [16, 40, .6], [86, 46, .58], [40, 8, .55], [84, 8, .5], [14, 88, .45], [86, 90, .42], [62, 40, .38], [36, 36, .34]];
 
+  // destaques da entrada (o agente busca no catálogo inteiro)
+  const DESTAQUES = ["airpods-pro-2", "asus-rtx-4090", "iphone-15", "ryzen-5-9600x", "sony-wh-1000xm3", "samsung-980-pro", "galaxy-s24-ultra", "jbl-flip-4", "corsair-vengeance-rgb", "msi-rtx-3070", "apple-watch-se", "avell-fusion", "kindle-paperwhite", "galaxy-buds-plus"].map(produto).filter(Boolean);
   function telaInicio() {
     $app.innerHTML = `<section class="palco" id="palco">
         <div class="halo"></div><div class="chao"></div>
-        <div class="nuvem" id="nuvem">${D.produtos.map((p, i) => `<div class="item" data-id="${p.id}" style="z-index:${20 - i}"><div class="flutua"><img src="${p.recorte}" alt="${esc(nomeCompleto(p))}" draggable="false"><div class="etq">${esc(nomeCompleto(p))}<b class="num">${brl(resumo(p).melhor.total)}</b></div></div></div>`).join("")}</div>
+        <div class="nuvem" id="nuvem">${DESTAQUES.map((p, i) => `<div class="item" data-id="${p.id}" style="z-index:${20 - i}"><div class="flutua"><img src="${p.recorte}" alt="${esc(nomeCompleto(p))}" draggable="false"><div class="etq">${esc(nomeCompleto(p))}<b class="num">${brl(resumo(p).melhor.total)}</b></div></div></div>`).join("")}</div>
         <div class="chamada">
-          <span class="eyebrow">Eletrônicos · 10 lojas · preço final</span>
+          <span class="eyebrow">Eletrônicos e peças de PC · ${D.lojas.length} lojas · preço final</span>
           <h1><span class="risco">O preço da vitrine</span> mente.</h1>
           <p>A gente mostra <b>o que chega na sua casa</b>: produto, frete, imposto e ICMS. E faz as lojas apostarem corrida.</p>
-          <label class="campo-busca"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="busca" type="search" placeholder="Digite: fone, iPhone, JBL, Kindle..." autocomplete="off" aria-label="Buscar produto"></label>
-          <span class="dica"><span>Toque</span> num produto para ver a corrida · <span>arraste um sobre o outro</span> para comparar · preços de demonstração</span>
+          <a class="bt-agente" href="agente.html"><span class="bt-agente-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span><b>Perguntar ao agente</b><small>ele abre as ${D.lojas.length} lojas e traz o preço na sua porta</small></span><svg class="seta" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <span class="dica"><span>Passe o mouse</span> e <span>toque</span> num produto para o agente pesquisar · <span>arraste um sobre o outro</span> para comparar · preços de demonstração</span>
         </div>
       </section>`;
     const itens = [...document.querySelectorAll(".item")];
@@ -406,9 +415,9 @@ body { padding-bottom: 46px; }
     gsap.set(itens, { xPercent: -50, yPercent: -50 });
 
     function posicionar(animar) {
-      const q = norm(document.getElementById("busca")?.value.trim() || "");
-      const casa = D.produtos.map(p => !q || buscar(q).includes(p));
-      const ordem = D.produtos.map((p, i) => i).sort((a, b) => (casa[b] - casa[a]) || a - b);
+      const q = "";
+      const casa = DESTAQUES.map(() => true);
+      const ordem = DESTAQUES.map((p, i) => i).sort((a, b) => (casa[b] - casa[a]) || a - b);
       const v = vagas(), base = estreito() ? 58 : 92, ganho = estreito() ? 62 : 132;
       ordem.forEach((idx, k) => {
         const [x, y, d0] = v[k], el = itens[idx], ok = casa[idx];
@@ -426,8 +435,6 @@ body { padding-bottom: 46px; }
       gsap.from(itens, { opacity: 0, y: 60, scale: .7, duration: 1.4, ease: "expo.out", stagger: .05 });
       itens.forEach((el, i) => gsap.to(el.querySelector(".flutua"), { y: (i % 2 ? -1 : 1) * (8 + (i % 5) * 3), rotation: (i % 3 - 1) * 3, duration: 3 + (i % 4), yoyo: true, repeat: -1, ease: "sine.inOut" }));
     }
-    document.getElementById("busca").addEventListener("input", () => { posicionar(true); bip(520 + Math.random() * 120, .05, "square", .02); });
-    document.getElementById("busca").addEventListener("keydown", e => { if (e.key === "Enter") { const r = buscar(e.target.value); if (r.length) location.hash = r[0].id; } });
 
     // parallax com o mouse (deriva suave no celular)
     let mx = 0, my = 0, cx = 0, cy = 0, t0 = performance.now(), raf;
@@ -468,7 +475,7 @@ body { padding-bottom: 46px; }
         const up = () => {
           el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up);
           el.classList.remove("arrastando"); itens.forEach(o => o.classList.remove("alvo-drop"));
-          if (!mexeu) { bip(740, .1); location.hash = el.dataset.id; return; }
+          if (!mexeu) { bip(740, .1); location.href = "agente.html#" + el.dataset.id; return; }
           if (alvo) { bip(500, .1); setTimeout(() => bip(750, .15), 90); location.hash = "comparar-" + el.dataset.id + "--" + alvo.dataset.id; return; }
           gsap.to(estado[i], { dx: 0, dy: 0, duration: .7, ease: "elastic.out(1, .5)", onUpdate: () => { if (calmo) el.style.translate = `${estado[i].dx}px ${estado[i].dy}px`; } });
         };
