@@ -46,3 +46,20 @@ para todos os produtos.
 
 Os nomes das marcas aparecem só como nome do produto. O site é um protótipo de
 estudo, sem ligação com as marcas ou lojas citadas.
+
+
+## Peças de computador e mais eletrônicos (20/11/2026)
+
+Fotos do Wikimedia Commons, com o fundo removido para os recortes:
+
+- Asus ROG Strix RTX 4090: "Asus Strix RTX 4090.jpg", Benlisquare, CC BY-SA 4.0
+- MSI RTX 3070 Ventus 3X OC: "MSI GeForce RTX 3070 VENTUS 3X OC.jpg", TheStriker, CC BY 4.0
+- Intel Core i5-12400F: foto de Fritzchens Fritz, CC0
+- AMD Ryzen 5 9600X: foto de Fritzchens Fritz, CC0
+- Samsung SSD 980 PRO 1 TB: D-Kuru, CC BY-SA 4.0
+- Kingston SSD NV2 2 TB: Jacek Halicki, CC BY-SA 4.0
+- Samsung SSD 970 EVO Plus 250 GB: Jacek Halicki, CC BY-SA 4.0
+- Corsair Vengeance DDR5: Jacek Halicki, CC BY-SA 4.0
+- Corsair CX600M: FASTILY, CC BY-SA 4.0
+- Asus ProArt PA246Q: MKFI, domínio público
+- Avell Fusion: Marketing Avell, CC BY 4.0
